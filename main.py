@@ -1,3 +1,6 @@
+import sys
+import time
+
 from langchain.chains import create_history_aware_retriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import MessagesPlaceholder
@@ -24,9 +27,14 @@ vectorstore = InMemoryVectorStore(mistral_embeddings)
 
 
 # Function to update chat history
-def add_message_to_history(message):
-    splits = text_splitter.split_documents([message])
-    vectorstore.add_documents(documents=splits, embedding=mistral_embeddings)
+def add_message_to_history(history, message_type: str, message: str):
+    print(f"Adding message to history: {message}")
+    # splits = text_splitter.split_documents([message]) # split documents
+    history.append((message_type, message))
+    splits = text_splitter.split_text(message)
+    vectorstore.add_texts(texts=splits)
+    time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
+    # vectorstore.add_documents(documents=splits, embedding=mistral_embeddings)
 
 
 # Set up the prompt template
@@ -56,40 +64,60 @@ history_aware_retriever = create_history_aware_retriever(
 chain = prompt_template | llm_instance | StrOutputParser()
 
 
-# Main interaction loop
-max_turns = 5
-turn_count = 1
-while turn_count < max_turns:
-    print(f"Loop: {turn_count}")
-    print("----------------------")
-    # Collect user input dynamically
-    message = input("You: ")
-    if message.lower() == "exit":
-        break
-    add_message_to_history(message)
+def main():
+    # Main interaction loop
+    max_turns = 5
+    turn_count = 1
+    chat_history = []  # Initialize chat history
 
-    # Update the prompt with user input
-    user_prompt = {"input": message}
-    # Generate response
-    response = chain.invoke(input=user_prompt)
-    print(response)
+    while True:
+        # Collect user input dynamically
+        message = input("You: ")
+        if message.lower() == "exit":
+            sys.exit()
+        add_message_to_history(chat_history, "human", message)
 
-    # Extract JSON function if available
-    json_function = extract_json_from_text(response)
-    print(json_function)
-    if json_function:
-        function_name = json_function[0]["function_name"]
-        function_params = json_function[0]["function_params"]
-        if function_name not in available_actions:
-            raise Exception(f"Unknown action: {function_name}: {function_params}")
-        print(f" -- running {function_name} {function_params}")
-        action_function = available_actions[function_name]
-        # Call the function
-        result = action_function(**function_params)
-        function_result_message = f"Action_Response: {result}"
-        # Update prompt for next turn
-        user_prompt = {"input": function_result_message}
-        print(function_result_message)
-    else:
-        break
-    turn_count += 1
+        # Update the prompt with user input
+        user_prompt = {"input": message, "chat_history": chat_history}
+        # Generate response
+        response = chain.invoke(input=user_prompt)
+        print(f"initial response: {response}")
+
+        while turn_count < max_turns:
+            # Extract JSON function if available
+            json_function = extract_json_from_text(response)
+            print(f"{json_function=}")
+            if json_function:
+                print(f"Loop: {turn_count}")
+                print("----------------------")
+                time.sleep(1)  # Sleep for 1 second to allow rate limit to reset
+                function_name = json_function[0]["function_name"]
+                function_params = json_function[0]["function_params"]
+                if function_name not in available_actions:
+                    print(f"Unknown action: {function_name}: {function_params}")
+                print(f" -- running {function_name} {function_params}")
+                action_function = available_actions[function_name]
+                # Call the function
+                result = action_function(**function_params)
+                function_result_message = f"Action_Response: {result}"
+                # Update prompt for next turn
+                print(function_result_message)
+                # Generate a new AI response based on the action result
+                user_prompt = {
+                    "input": function_result_message,
+                    "chat_history": chat_history,
+                }
+                response = chain.invoke(input=user_prompt)
+                time.sleep(1)  # Sleep for 1 second to allow rate limit to reset
+                print(f"response after action response sent: {response}")
+                turn_count += 1
+            else:
+                break
+
+        print(f"Final response: {response}")
+        # Add the AI response to history and inform the user
+        add_message_to_history(chat_history, "ai", response.split("Answer:")[1])
+
+
+if __name__ == "__main__":
+    main()
