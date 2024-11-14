@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "terrachat"
+version = "0.1.0"
+description = "Target goal is to use free token(from multiple vendors) to achieve maximum cost-effective chat"
+authors = ["Niv Hanin"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+langchain-cohere = "^0.3.1"
+langchain-mistralai = "^0.2.1"
+langchain-google-genai = "^2.0.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
