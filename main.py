@@ -10,7 +10,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sample_functions import get_weather
-from prompts import react_system_prompt, contextualize_q_system_prompt
+from prompts import react_system_prompt, react_system_prompt2, contextualize_q_system_prompt
 from helpers.json_helpers import extract_json_from_text
 
 
@@ -21,7 +21,11 @@ available_actions = {"get_weather": get_weather}
 llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
 
 # Initialize components for dynamic message retrieval - Memory feature
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+text_splitter = RecursiveCharacterTextSplitter(
+    separators="\n",
+    chunk_size=200,
+    chunk_overlap=150,
+    length_function=len)
 mistral_embeddings = MistralAIEmbeddings()
 vectorstore = InMemoryVectorStore(mistral_embeddings)
 
@@ -32,6 +36,7 @@ def add_message_to_history(history, message_type: str, message: str):
     # splits = text_splitter.split_documents([message]) # split documents
     history.append((message_type, message))
     splits = text_splitter.split_text(message)
+    print(f"Adding splits to vectorstore: {splits}")
     vectorstore.add_texts(texts=splits)
     time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
     # vectorstore.add_documents(documents=splits, embedding=mistral_embeddings)
@@ -40,7 +45,7 @@ def add_message_to_history(history, message_type: str, message: str):
 # Set up the prompt template
 prompt_template = ChatPromptTemplate.from_messages(
     [
-        ("system", react_system_prompt),
+        ("system", react_system_prompt2),
         MessagesPlaceholder("chat_history"),
         ("ai", "Welcome to the TerraChat, how can I help you?"),
         ("human", "{input}"),
@@ -90,11 +95,13 @@ def main():
             if json_function:
                 print(f"Loop: {turn_count}")
                 print("----------------------")
-                time.sleep(1)  # Sleep for 1 second to allow rate limit to reset
+                # Sleep for 1 second to allow rate limit to reset
+                time.sleep(1)
                 function_name = json_function[0]["function_name"]
                 function_params = json_function[0]["function_params"]
                 if function_name not in available_actions:
-                    print(f"Unknown action: {function_name}: {function_params}")
+                    print(
+                        f"Unknown action: {function_name}: {function_params}")
                 print(f" -- running {function_name} {function_params}")
                 action_function = available_actions[function_name]
                 # Call the function
@@ -108,7 +115,8 @@ def main():
                     "chat_history": chat_history,
                 }
                 response = chain.invoke(input=user_prompt)
-                time.sleep(1)  # Sleep for 1 second to allow rate limit to reset
+                # Sleep for 1 second to allow rate limit to reset
+                time.sleep(1)
                 print(f"response after action response sent: {response}")
                 turn_count += 1
             else:
@@ -116,7 +124,8 @@ def main():
 
         print(f"Final response: {response}")
         # Add the AI response to history and inform the user
-        add_message_to_history(chat_history, "ai", response.split("Answer:")[1])
+        add_message_to_history(
+            chat_history, "ai", response.split("Answer:")[1])
 
 
 if __name__ == "__main__":
