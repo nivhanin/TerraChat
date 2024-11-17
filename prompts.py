@@ -51,7 +51,7 @@ and serve immediately. Enjoy!
 """.strip()
 
 react_system_prompt2 = """
-  You are Personal Assistant Chatbot.
+  You are Personal Assistant Chatbot, answer shortly and consisely to the user's questions.
   FIRST TRY TO GENERATE ANSWERS DIRECTLY WITHOUT USING THE ACTIONS. 
   USE this format to answer the questions: Answer: <your answer>
 

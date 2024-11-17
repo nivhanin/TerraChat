@@ -26,7 +26,7 @@ llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
-    separators=["\n", "."], chunk_size=200, chunk_overlap=50, length_function=len
+    separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
 )
 mistral_embeddings = MistralAIEmbeddings()
 vectorstore = InMemoryVectorStore(mistral_embeddings)
@@ -104,7 +104,8 @@ def main():
                 function_name = json_function[0]["function_name"]
                 function_params = json_function[0]["function_params"]
                 if function_name not in available_actions:
-                    print(f"Unknown action: {function_name}: {function_params}")
+                    print(
+                        f"Unknown action: {function_name}: {function_params}")
                 print(f" -- running {function_name} {function_params}")
                 action_function = available_actions[function_name]
                 # Call the function
