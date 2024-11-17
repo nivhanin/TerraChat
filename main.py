@@ -10,7 +10,11 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sample_functions import get_weather
-from prompts import react_system_prompt, react_system_prompt2, contextualize_q_system_prompt
+from prompts import (
+    react_system_prompt,
+    react_system_prompt2,
+    contextualize_q_system_prompt,
+)
 from helpers.json_helpers import extract_json_from_text
 
 
@@ -22,10 +26,8 @@ llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
-    separators="\n",
-    chunk_size=200,
-    chunk_overlap=150,
-    length_function=len)
+    separators=["\n", "."], chunk_size=200, chunk_overlap=50, length_function=len
+)
 mistral_embeddings = MistralAIEmbeddings()
 vectorstore = InMemoryVectorStore(mistral_embeddings)
 
@@ -71,11 +73,12 @@ chain = prompt_template | llm_instance | StrOutputParser()
 
 def main():
     # Main interaction loop
-    max_turns = 5
+    max_turns = 3
     turn_count = 1
     chat_history = []  # Initialize chat history
 
     while True:
+        print("Starting new conversation - main loop")
         # Collect user input dynamically
         message = input("You: ")
         if message.lower() == "exit":
@@ -89,19 +92,19 @@ def main():
         print(f"initial response: {response}")
 
         while turn_count < max_turns:
+            print(f"Turn count: {turn_count}")
             # Extract JSON function if available
             json_function = extract_json_from_text(response)
             print(f"{json_function=}")
             if json_function:
                 print(f"Loop: {turn_count}")
                 print("----------------------")
-                # Sleep for 1 second to allow rate limit to reset
-                time.sleep(1)
+                # Sleep for 2 second to allow rate limit to reset
+                time.sleep(2)
                 function_name = json_function[0]["function_name"]
                 function_params = json_function[0]["function_params"]
                 if function_name not in available_actions:
-                    print(
-                        f"Unknown action: {function_name}: {function_params}")
+                    print(f"Unknown action: {function_name}: {function_params}")
                 print(f" -- running {function_name} {function_params}")
                 action_function = available_actions[function_name]
                 # Call the function
@@ -124,8 +127,10 @@ def main():
 
         print(f"Final response: {response}")
         # Add the AI response to history and inform the user
-        add_message_to_history(
-            chat_history, "ai", response.split("Answer:")[1])
+        answer_data = response.split("Answer:")[1]
+        if not answer_data:
+            sys.exit("No answer data found!!!")
+        add_message_to_history(chat_history, "ai", answer_data)
 
 
 if __name__ == "__main__":
