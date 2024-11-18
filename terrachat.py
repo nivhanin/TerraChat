@@ -41,7 +41,10 @@ def add_message_to_history(history, message_type: str, message: str):
     history.append((message_type, message))
     splits = text_splitter.split_text(message)
     print(f"Adding splits to vectorstore: {splits}")
-    vectorstore.add_texts(texts=splits)
+    try:
+        vectorstore.add_texts(texts=splits)
+    except Exception as e:
+        print(f"Error adding texts to vectorstore: {e}")
     time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
     # vectorstore.add_documents(documents=splits, embedding=mistral_embeddings)
 
@@ -88,17 +91,16 @@ def main():
     turn_count = 1
     chat_history = []  # Initialize chat history
 
-    # while True:
+    # Start the conversation loop
     print("Starting new conversation - main loop")
-    # Get user question
-    # React to user input
     if user_question := st.chat_input("Type your question here:"):
         # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(user_question)
         # Add user message to chat history
         st.session_state.messages.append(
-            {"role": "user", "content": user_question})
+            {"role": "user", "content": user_question}
+        )
         if user_question:
             # Collect user input dynamically
             message = user_question
@@ -107,58 +109,63 @@ def main():
             add_message_to_history(chat_history, "human", message)
             # Update the prompt with user input
             user_prompt = {"input": message, "chat_history": chat_history}
-            # Generate response
-            response = chain.invoke(input=user_prompt)
-            print(f"initial response: {response}")
 
-            while turn_count < max_turns and message:
-                print(f"Turn count: {turn_count}")
-                # Extract JSON function if available
-                json_function = extract_json_from_text(response)
-                print(f"{json_function=}")
-                if json_function:
-                    print(f"Loop: {turn_count}")
-                    print("----------------------")
-                    # Sleep for 2 second to allow rate limit to reset
-                    time.sleep(2)
-                    function_name = json_function[0]["function_name"]
-                    function_params = json_function[0]["function_params"]
-                    if function_name not in available_actions:
-                        print(
-                            f"Unknown action: {function_name}: {function_params}")
-                    print(f" -- running {function_name} {function_params}")
-                    action_function = available_actions[function_name]
-                    # Call the function
-                    result = action_function(**function_params)
-                    function_result_message = f"Action_Response: {result}"
-                    # Update prompt for next turn
-                    print(function_result_message)
-                    # Generate a new AI response based on the action result
-                    user_prompt = {
-                        "input": function_result_message,
-                        "chat_history": chat_history,
-                    }
+            # Display spinner while generating response
+            with st.spinner("Assistant is thinking..."):
+                with st.chat_message("ai"):
+                    # Generate response
                     response = chain.invoke(input=user_prompt)
-                    # Sleep for 1 second to allow rate limit to reset
-                    time.sleep(1)
-                    print(f"response after action response sent: {response}")
-                    turn_count += 1
-                else:
-                    break
+                    print(f"Initial response: {response}")
 
-            print(f"Final response: {response}")
-            # Add the AI response to history and inform the user
-            answer_data = response.split("Answer:")[1]
-            if not answer_data:
-                sys.exit("No answer data found!!!")
-            add_message_to_history(chat_history, "ai", answer_data)
-            # st.write(f"AI: {answer_data}")
-            # Display assistant response in chat message container
-            with st.chat_message("ai"):
-                st.markdown(answer_data)
-            # Add assistant response to chat history
-            st.session_state.messages.append(
-                {"role": "ai", "content": answer_data})
+                    while turn_count < max_turns and message:
+                        print(f"Turn count: {turn_count}")
+                        # Extract JSON function if available
+                        json_function = extract_json_from_text(response)
+                        print(f"{json_function=}")
+                        if json_function:
+                            print(f"Loop: {turn_count}")
+                            print("----------------------")
+                            # Sleep for 2 seconds to allow rate limit to reset
+                            time.sleep(2)
+                            function_name = json_function[0]["function_name"]
+                            function_params = json_function[0]["function_params"]
+                            if function_name not in available_actions:
+                                print(
+                                    f"Unknown action: {function_name}: {function_params}"
+                                )
+                            print(
+                                f" -- running {function_name} {function_params}")
+                            action_function = available_actions[function_name]
+                            # Call the function
+                            result = action_function(**function_params)
+                            function_result_message = f"Action_Response: {result}"
+                            # Update prompt for next turn
+                            print(function_result_message)
+                            # Generate a new AI response based on the action result
+                            user_prompt = {
+                                "input": function_result_message,
+                                "chat_history": chat_history,
+                            }
+                            response = chain.invoke(input=user_prompt)
+                            # Sleep for 1 second to allow rate limit to reset
+                            time.sleep(1)
+                            print(
+                                f"Response after action response sent: {response}")
+                            turn_count += 1
+                        else:
+                            break
+
+                    print(f"Final response: {response}")
+                    # Add the AI response to history and inform the user
+                    answer_data = response.split("Answer:")[1]
+                    if not answer_data:
+                        sys.exit("No answer data found!!!")
+                    add_message_to_history(chat_history, "ai", answer_data)
+                    st.markdown(answer_data)
+                # Add assistant response to chat history
+                st.session_state.messages.append(
+                    {"role": "ai", "content": answer_data}
+                )
 
 
 if __name__ == "__main__":
