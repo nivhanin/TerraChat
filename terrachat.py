@@ -35,10 +35,11 @@ vectorstore = InMemoryVectorStore(mistral_embeddings)
 
 
 # Function to update chat history
-def add_message_to_history(history, message_type: str, message: str):
+def add_message_to_history(message_type: str, message: str):
     print(f"Adding message to history: {message}")
-    # splits = text_splitter.split_documents([message]) # split documents
-    history.append((message_type, message))
+    # Add chat message user or AI response to chat history
+    st.session_state.chat_history.append({"role": message_type, "content": message})
+
     splits = text_splitter.split_text(message)
     print(f"Adding splits to vectorstore: {splits}")
     try:
@@ -46,7 +47,6 @@ def add_message_to_history(history, message_type: str, message: str):
     except Exception as e:
         print(f"Error adding texts to vectorstore: {e}")
     time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
-    # vectorstore.add_documents(documents=splits, embedding=mistral_embeddings)
 
 
 # Set up the prompt template
@@ -76,20 +76,19 @@ history_aware_retriever = create_history_aware_retriever(
 chain = prompt_template | llm_instance | StrOutputParser()
 
 # Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+for session_message in st.session_state.chat_history:
+    with st.chat_message(session_message["role"]):
+        st.markdown(session_message["content"])
 
 
 def main():
     # Main interaction loop
     max_turns = 3
     turn_count = 1
-    chat_history = []  # Initialize chat history
 
     # Start the conversation loop
     print("Starting new conversation - main loop")
@@ -98,15 +97,17 @@ def main():
         with st.chat_message("user"):
             st.markdown(user_question)
         # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": user_question})
         if user_question:
             # Collect user input dynamically
             message = user_question
             if message.lower() == "exit":
                 sys.exit()
-            add_message_to_history(chat_history, "human", message)
+            add_message_to_history("human", message)
             # Update the prompt with user input
-            user_prompt = {"input": message, "chat_history": chat_history}
+            user_prompt = {
+                "input": message,
+                "chat_history": st.session_state.chat_history,
+            }
 
             # Display spinner while generating response
             with st.spinner("Assistant is thinking..."):
@@ -141,7 +142,7 @@ def main():
                             # Generate a new AI response based on the action result
                             user_prompt = {
                                 "input": function_result_message,
-                                "chat_history": chat_history,
+                                "chat_history": st.session_state.chat_history,
                             }
                             response = chain.invoke(input=user_prompt)
                             # Sleep for 1 second to allow rate limit to reset
@@ -155,13 +156,11 @@ def main():
                     # Add the AI response to history and inform the user
                     try:
                         answer_data = response.split("Answer:")[1]
-                    except KeyError:
+                    except IndexError:
                         answer_data = response[0]
                         print("No answer data found!!!")
-                    add_message_to_history(chat_history, "ai", answer_data)
+                    add_message_to_history("ai", answer_data)
                     st.markdown(answer_data)
-                # Add assistant response to chat history
-                st.session_state.messages.append({"role": "ai", "content": answer_data})
 
 
 if __name__ == "__main__":
