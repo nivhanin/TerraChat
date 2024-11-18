@@ -98,9 +98,7 @@ def main():
         with st.chat_message("user"):
             st.markdown(user_question)
         # Add user message to chat history
-        st.session_state.messages.append(
-            {"role": "user", "content": user_question}
-        )
+        st.session_state.messages.append({"role": "user", "content": user_question})
         if user_question:
             # Collect user input dynamically
             message = user_question
@@ -133,8 +131,7 @@ def main():
                                 print(
                                     f"Unknown action: {function_name}: {function_params}"
                                 )
-                            print(
-                                f" -- running {function_name} {function_params}")
+                            print(f" -- running {function_name} {function_params}")
                             action_function = available_actions[function_name]
                             # Call the function
                             result = action_function(**function_params)
@@ -149,23 +146,22 @@ def main():
                             response = chain.invoke(input=user_prompt)
                             # Sleep for 1 second to allow rate limit to reset
                             time.sleep(1)
-                            print(
-                                f"Response after action response sent: {response}")
+                            print(f"Response after action response sent: {response}")
                             turn_count += 1
                         else:
                             break
 
                     print(f"Final response: {response}")
                     # Add the AI response to history and inform the user
-                    answer_data = response.split("Answer:")[1]
-                    if not answer_data:
-                        sys.exit("No answer data found!!!")
+                    try:
+                        answer_data = response.split("Answer:")[1]
+                    except KeyError:
+                        answer_data = response[0]
+                        print("No answer data found!!!")
                     add_message_to_history(chat_history, "ai", answer_data)
                     st.markdown(answer_data)
                 # Add assistant response to chat history
-                st.session_state.messages.append(
-                    {"role": "ai", "content": answer_data}
-                )
+                st.session_state.messages.append({"role": "ai", "content": answer_data})
 
 
 if __name__ == "__main__":
