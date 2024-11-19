@@ -1,3 +1,7 @@
+import re
+from helpers.json_helpers import extract_json_from_text
+from prompts import react_system_prompt, contextualize_q_system_prompt
+from sample_functions import get_weather
 import sys
 import time
 
@@ -10,12 +14,25 @@ from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from langchain_google_genai import ChatGoogleGenerativeAI
 
+llm_instance = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    # other params...
+)
+llm_geminai_instance_flash_8b = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash-8b",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    # other params...
+)
 
-from sample_functions import get_weather
-from prompts import react_system_prompt, contextualize_q_system_prompt
-from helpers.json_helpers import extract_json_from_text
-import re
 
 st.header("TerraChat")
 
@@ -23,7 +40,8 @@ st.header("TerraChat")
 available_actions = {"get_weather": get_weather}
 
 # Create LLM instance using Langchain
-llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
+# llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
+llm_cohere_instance = ChatMistralAI(model_name="cohere")
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
