@@ -11,11 +11,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sample_functions import get_weather
-from prompts import (
-    react_system_prompt,
-    react_system_prompt2,
-    contextualize_q_system_prompt,
-)
+from prompts import react_system_prompt, contextualize_q_system_prompt
 from helpers.json_helpers import extract_json_from_text
 
 st.header("TerraChat")
@@ -52,7 +48,7 @@ def add_message_to_history(message_type: str, message: str):
 # Set up the prompt template
 prompt_template = ChatPromptTemplate.from_messages(
     [
-        ("system", react_system_prompt2),
+        ("system", react_system_prompt),
         MessagesPlaceholder("chat_history"),
         ("ai", "Welcome to the TerraChat, how can I help you?"),
         ("human", "{input}"),
