@@ -9,10 +9,13 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+
 
 from sample_functions import get_weather
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from helpers.json_helpers import extract_json_from_text
+import re
 
 st.header("TerraChat")
 
@@ -30,18 +33,26 @@ mistral_embeddings = MistralAIEmbeddings()
 vectorstore = InMemoryVectorStore(mistral_embeddings)
 
 
-# Function to update chat history
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(2),
+    retry=retry_if_exception_type(KeyError),
+)
+def _add_texts_to_vectorstore(splits):
+    print(f"Adding splits to vectorstore: {splits}")
+    # try:
+    vectorstore.add_texts(texts=splits)
+
+
 def add_message_to_history(message_type: str, message: str):
     print(f"Adding message to history: {message}")
     # Add chat message user or AI response to chat history
-    st.session_state.chat_history.append({"role": message_type, "content": message})
+    st.session_state.chat_history.append(
+        {"role": message_type, "content": message})
 
     splits = text_splitter.split_text(message)
-    print(f"Adding splits to vectorstore: {splits}")
-    try:
-        vectorstore.add_texts(texts=splits)
-    except Exception as e:
-        print(f"Error adding texts to vectorstore: {e}")
+    _add_texts_to_vectorstore(splits)
+
     time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
 
 
@@ -85,57 +96,79 @@ def handle_user_input(user_question):
     with st.chat_message("user"):
         st.markdown(user_question)
     add_message_to_history("human", user_question)
-    user_prompt = {
+    return {
         "input": user_question,
         "chat_history": st.session_state.chat_history,
     }
-    return user_prompt
 
 
-def process_response(response, turn_count, max_turns):
+def run_chain_with_function_result(result):
+    function_result_message = f"Action_Response: {result}"
+    print(function_result_message)
+    user_prompt = {
+        "input": function_result_message,
+        "chat_history": st.session_state.chat_history,
+    }
+    return chain.invoke(input=user_prompt)
+
+
+def generate_response(user_prompt):
+    response = chain.invoke(input=user_prompt)
+    print(f"Initial response: {response}")
+    return process_response(response)
+
+
+def process_response(response):
+    max_turns = 3
+    turn_count = 1
     while turn_count < max_turns:
         print(f"Turn count: {turn_count}")
         json_function = extract_json_from_text(response)
         print(f"{json_function=}")
-        if json_function:
-            time.sleep(2)
+        if not json_function:
+            break
+
+        time.sleep(2)
+        try:
             function_name = json_function[0]["function_name"]
             function_params = json_function[0]["function_params"]
-            if function_name not in available_actions:
-                print(f"Unknown action: {function_name}: {function_params}")
-            print(f" -- running {function_name} {function_params}")
-            result = available_actions[function_name](**function_params)
-            function_result_message = f"Action_Response: {result}"
-            print(function_result_message)
-            user_prompt = {
-                "input": function_result_message,
-                "chat_history": st.session_state.chat_history,
-            }
-            response = chain.invoke(input=user_prompt)
-            time.sleep(1)
-            print(f"Response after action response sent: {response}")
-            turn_count += 1
-        else:
+        except KeyError as e:
+            try:
+                match = re.search(r"Answer:\s*(.+)", response, re.DOTALL)
+                if match:
+                    answer_data = match.group(1)
+                else:
+                    answer_data = response[0]
+                    print("No answer data found!!!")
+            except IndexError:
+                answer_data = response[0]
+                print("No answer data found!!!")
+            print(
+                f"The respone is natively contains a json format, but the keys are not found")
+            return answer_data
+        if function_name not in available_actions:
+            print(f"Unknown action: {function_name}: {function_params}")
             break
+
+        print(f" -- running {function_name} {function_params}")
+        result = available_actions[function_name](**function_params)
+        response = run_chain_with_function_result(result)
+        turn_count += 1
     return response
 
 
 def main():
     # Main interaction loop
-    max_turns = 3
-    turn_count = 1
 
     # Start the conversation loop
     print("Starting new conversation - main loop")
     if user_question := st.chat_input("Type your question here:"):
         user_prompt = handle_user_input(user_question)
         # Display spinner while generating response
+        # Generate response
+        response = generate_response(user_prompt)
         with st.spinner("Assistant is thinking..."):
             with st.chat_message("ai"):
-                # Generate response
-                response = chain.invoke(input=user_prompt)
-                print(f"Initial response: {response}")
-                response = process_response(response, turn_count, max_turns)
                 print(f"Final response: {response}")
                 # Add the AI response to history and inform the user
                 try:
