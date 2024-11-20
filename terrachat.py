@@ -2,7 +2,6 @@ import re
 from helpers.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from sample_functions import get_weather
-import sys
 import time
 
 import streamlit as st
@@ -16,22 +15,24 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-llm_instance = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-    # other params...
-)
-llm_geminai_instance_flash_8b = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash-8b",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-    # other params...
-)
+from utils.logger import log
+
+# llm_instance = ChatGoogleGenerativeAI(
+#     model="gemini-1.5-flash",
+#     temperature=0,
+#     max_tokens=None,
+#     timeout=None,
+#     max_retries=2,
+# other params...
+# )
+# llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
+#     model="gemini-1.5-flash-8b",
+#     temperature=0,
+#     max_tokens=None,
+#     timeout=None,
+#     max_retries=2,
+# other params...
+# )
 
 
 st.header("TerraChat")
@@ -40,8 +41,8 @@ st.header("TerraChat")
 available_actions = {"get_weather": get_weather}
 
 # Create LLM instance using Langchain
-# llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
-llm_cohere_instance = ChatMistralAI(model_name="cohere")
+llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
+# llm_cohere_instance = ChatMistralAI(model_name="cohere")
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
@@ -57,21 +58,19 @@ vectorstore = InMemoryVectorStore(mistral_embeddings)
     retry=retry_if_exception_type(KeyError),
 )
 def _add_texts_to_vectorstore(splits):
-    print(f"Adding splits to vectorstore: {splits}")
-    # try:
+    log.info(f"Adding splits to vectorstore: {splits}")
     vectorstore.add_texts(texts=splits)
 
 
 def add_message_to_history(message_type: str, message: str):
-    print(f"Adding message to history: {message}")
+    log.info(f"Adding message to history: {message}")
     # Add chat message user or AI response to chat history
-    st.session_state.chat_history.append(
-        {"role": message_type, "content": message})
+    st.session_state.chat_history.append({"role": message_type, "content": message})
 
     splits = text_splitter.split_text(message)
     _add_texts_to_vectorstore(splits)
 
-    time.sleep(2)  # Sleep for 1 second to allow rate limit to reset
+    time.sleep(2)  # Sleep for 2 second to allow rate limit to reset
 
 
 # Set up the prompt template
@@ -122,7 +121,7 @@ def handle_user_input(user_question):
 
 def run_chain_with_function_result(result):
     function_result_message = f"Action_Response: {result}"
-    print(function_result_message)
+    log.info(function_result_message)
     user_prompt = {
         "input": function_result_message,
         "chat_history": st.session_state.chat_history,
@@ -132,7 +131,7 @@ def run_chain_with_function_result(result):
 
 def generate_response(user_prompt):
     response = chain.invoke(input=user_prompt)
-    print(f"Initial response: {response}")
+    log.info(f"Initial response: {response}")
     return process_response(response)
 
 
@@ -140,9 +139,9 @@ def process_response(response):
     max_turns = 3
     turn_count = 1
     while turn_count < max_turns:
-        print(f"Turn count: {turn_count}")
+        log.info(f"Turn count: {turn_count}")
         json_function = extract_json_from_text(response)
-        print(f"{json_function=}")
+        log.info(f"{json_function=}")
         if not json_function:
             break
 
@@ -157,18 +156,20 @@ def process_response(response):
                     answer_data = match.group(1)
                 else:
                     answer_data = response[0]
-                    print("No answer data found!!!")
+                    log.info("No answer data found!!!")
             except IndexError:
                 answer_data = response[0]
-                print("No answer data found!!!")
-            print(
-                f"The respone is natively contains a json format, but the keys are not found")
+                log.error("No answer data found!!!")
+            log.info(
+                f"The response is natively contains a json format, "
+                f"but the action keys are not found"
+            )
             return answer_data
         if function_name not in available_actions:
-            print(f"Unknown action: {function_name}: {function_params}")
+            log.warning(f"Unknown action: {function_name}: {function_params}")
             break
 
-        print(f" -- running {function_name} {function_params}")
+        log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
         response = run_chain_with_function_result(result)
         turn_count += 1
@@ -176,10 +177,8 @@ def process_response(response):
 
 
 def main():
-    # Main interaction loop
-
-    # Start the conversation loop
-    print("Starting new conversation - main loop")
+    # Main interaction loop - TerraChat assistant - start the conversation loop
+    log.info("Starting new conversation - main loop")
     if user_question := st.chat_input("Type your question here:"):
         user_prompt = handle_user_input(user_question)
         # Display spinner while generating response
@@ -187,13 +186,13 @@ def main():
         response = generate_response(user_prompt)
         with st.spinner("Assistant is thinking..."):
             with st.chat_message("ai"):
-                print(f"Final response: {response}")
+                log.info(f"Final response: {response}")
                 # Add the AI response to history and inform the user
                 try:
                     answer_data = response.split("Answer:")[1]
                 except IndexError:
                     answer_data = response[0]
-                    print("No answer data found!!!")
+                    log.error("No answer data found!")
                 add_message_to_history("ai", answer_data)
                 st.markdown(answer_data)
 
