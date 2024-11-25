@@ -36,6 +36,7 @@ class RateLimiterLLMChain:
     def record_request(self):
         self.last_request_time = time.time()
         self.request_count += 1
+        log.info(f"Request count for {self.model_name}: {self.request_count}")
 
     def run_invoke(self, user_prompt):
         wait_time = self.calculate_wait_time()
