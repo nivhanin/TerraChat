@@ -183,20 +183,16 @@ def process_response(response):
             function_name = json_function[0]["function_name"]
             function_params = json_function[0]["function_params"]
         except KeyError as e:
-            try:
-                match = re.search(r"Answer:\s*(.+)", response, re.DOTALL)
-                if match:
-                    answer_data = match.group(1)
-                else:
-                    answer_data = response
-                    log.info("No answer data found!!!")
-            except IndexError:
+            match = re.search(r"Answer:\s*(.+)", response, re.DOTALL)
+            if match:
+                answer_data = match.group(1)
+            else:
                 answer_data = response
-                log.error("No answer data found!!!")
-            log.info(
-                f"The response is natively contains a json format, "
-                f"but the action keys are not found"
-            )
+                log.info("bad regex: No answer data found!")
+                log.info(
+                    f"The response is natively contains a json format, "
+                    f"but the action keys are not found"
+                )
             return answer_data
         if function_name not in available_actions:
             log.warning(f"Unknown action: {function_name}: {function_params}")
@@ -224,8 +220,8 @@ def main():
                 try:
                     answer_data = response.split("Answer:")[1]
                 except IndexError:
-                    answer_data = response[0]
-                    log.error("No answer data found!")
+                    answer_data = response
+                    log.error("IndexError: No answer data found!")
                 add_message_to_history("ai", answer_data)
                 st.markdown(answer_data)
 
