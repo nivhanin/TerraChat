@@ -188,10 +188,10 @@ def process_response(response):
                 if match:
                     answer_data = match.group(1)
                 else:
-                    answer_data = response[0]
+                    answer_data = response
                     log.info("No answer data found!!!")
             except IndexError:
-                answer_data = response[0]
+                answer_data = response
                 log.error("No answer data found!!!")
             log.info(
                 f"The response is natively contains a json format, "
