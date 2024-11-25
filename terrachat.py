@@ -1,6 +1,7 @@
 import re
 from helpers.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
+from rate_limiter import RateLimiterLLMChain
 from sample_functions import get_weather
 import time
 
@@ -17,23 +18,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from utils.logger import log
 
-# llm_instance = ChatGoogleGenerativeAI(
-#     model="gemini-1.5-flash",
-#     temperature=0,
-#     max_tokens=None,
-#     timeout=None,
-#     max_retries=2,
-# other params...
-# )
-# llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
-#     model="gemini-1.5-flash-8b",
-#     temperature=0,
-#     max_tokens=None,
-#     timeout=None,
-#     max_retries=2,
-# other params...
-# )
-
 
 st.header("TerraChat")
 
@@ -41,7 +25,23 @@ st.header("TerraChat")
 available_actions = {"get_weather": get_weather}
 
 # Create LLM instance using Langchain
-llm_instance = ChatMistralAI(model_name="open-mistral-nemo")
+llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
+llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    # other params...
+)
+llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash-8b",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    # other params...
+)
 # llm_cohere_instance = ChatMistralAI(model_name="cohere")
 
 # Initialize components for dynamic message retrieval - Memory feature
@@ -93,11 +93,33 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 )
 retriever = vectorstore.as_retriever()
 history_aware_retriever = create_history_aware_retriever(
-    llm_instance, retriever, contextualize_q_prompt
+    llm_instance_mistral, retriever, contextualize_q_prompt
 )
 
-# Create LLM chain
-chain = prompt_template | llm_instance | StrOutputParser()
+# Define a simple StrOutputParser instance
+parser = StrOutputParser()
+
+# Setup chains - Create LLM chain
+mistral_chain = prompt_template | llm_instance_mistral | parser
+gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
+gemini_ai_flash_8b_chain = prompt_template | llm_gemini_ai_instance_flash_8b | parser
+
+
+# Create LLMChain instances
+llm_chains = [
+    # Order of chains is important
+    RateLimiterLLMChain(llm_chain=mistral_chain, max_requests_per_minute=30),
+    RateLimiterLLMChain(
+        llm_chain=gemini_ai_flash_chain,
+        max_requests_per_minute=15,
+        max_requests_per_day=1,
+    ),
+    RateLimiterLLMChain(
+        llm_chain=gemini_ai_flash_8b_chain,
+        max_requests_per_minute=15,
+        max_requests_per_day=500,
+    ),
+]
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
@@ -119,20 +141,31 @@ def handle_user_input(user_question):
     }
 
 
-def run_chain_with_function_result(result):
+def run_chains_with_function_result(result, chains):
     function_result_message = f"Action_Response: {result}"
     log.info(function_result_message)
     user_prompt = {
         "input": function_result_message,
         "chat_history": st.session_state.chat_history,
     }
-    return chain.invoke(input=user_prompt)
+    for llm_chain in chains:
+        response = llm_chain.run_invoke(user_prompt)
+        if response:
+            # Successfully invoked a chain, exit loop
+            return response
+
+    return "Error: No available LLM chain could provide a response."
 
 
-def generate_response(user_prompt):
-    response = chain.invoke(input=user_prompt)
-    log.info(f"Initial response: {response}")
-    return process_response(response)
+def generate_response(user_prompt, chains):
+    for llm_chain in chains:
+        response = llm_chain.run_invoke(user_prompt)
+        if response:
+            model_name = llm_chain.model_name
+            log.info(f"Response from {model_name=}: {response}")
+            return process_response(response)
+    log.warning("No available LLM chain could provide a response.")
+    return "No available LLM chain could provide a response."
 
 
 def process_response(response):
@@ -145,7 +178,7 @@ def process_response(response):
         if not json_function:
             break
 
-        time.sleep(2)
+        # time.sleep(2) # sleep moved to cooldown function in run_invoke
         try:
             function_name = json_function[0]["function_name"]
             function_params = json_function[0]["function_params"]
@@ -171,7 +204,7 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chain_with_function_result(result)
+        response = run_chains_with_function_result(result, llm_chains)
         turn_count += 1
     return response
 
@@ -183,7 +216,7 @@ def main():
         user_prompt = handle_user_input(user_question)
         # Display spinner while generating response
         # Generate response
-        response = generate_response(user_prompt)
+        response = generate_response(user_prompt, llm_chains)
         with st.spinner("Assistant is thinking..."):
             with st.chat_message("ai"):
                 log.info(f"Final response: {response}")
