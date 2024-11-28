@@ -1,4 +1,6 @@
 import re
+
+from openai import embeddings
 from helpers.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from rate_limiter import RateLimiterLLMChain
@@ -14,7 +16,7 @@ from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
 from utils.logger import log
 
@@ -23,6 +25,19 @@ st.header("TerraChat")
 
 # Available actions are:
 available_actions = {"get_weather": get_weather}
+
+# Set up the prompt template
+prompt_template = ChatPromptTemplate.from_messages(
+    [
+        ("system", react_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("ai", "Welcome to the TerraChat, how can I help you?"),
+        ("human", "{input}"),
+    ]
+)
+
+# Define a simple StrOutputParser instance
+parser = StrOutputParser()
 
 # Create LLM instance using Langchain
 llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
@@ -43,61 +58,6 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
     # other params...
 )
 # llm_cohere_instance = ChatMistralAI(model_name="cohere")
-
-# Initialize components for dynamic message retrieval - Memory feature
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
-)
-mistral_embeddings = MistralAIEmbeddings()
-vectorstore = InMemoryVectorStore(mistral_embeddings)
-
-
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(2),
-    retry=retry_if_exception_type(KeyError),
-)
-def _add_texts_to_vectorstore(splits):
-    log.info(f"Adding splits to vectorstore: {splits}")
-    vectorstore.add_texts(texts=splits)
-
-
-def add_message_to_history(message_type: str, message: str):
-    log.info(f"Adding message to history: {message}")
-    # Add chat message user or AI response to chat history
-    st.session_state.chat_history.append({"role": message_type, "content": message})
-
-    splits = text_splitter.split_text(message)
-    _add_texts_to_vectorstore(splits)
-
-    time.sleep(2)  # Sleep for 2 second to allow rate limit to reset
-
-
-# Set up the prompt template
-prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", react_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("ai", "Welcome to the TerraChat, how can I help you?"),
-        ("human", "{input}"),
-    ]
-)
-
-# Set up the retriever - Memory feature
-contextualize_q_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_q_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
-retriever = vectorstore.as_retriever()
-history_aware_retriever = create_history_aware_retriever(
-    llm_instance_mistral, retriever, contextualize_q_prompt
-)
-
-# Define a simple StrOutputParser instance
-parser = StrOutputParser()
 
 # Setup chains - Create LLM chain
 mistral_chain = prompt_template | llm_instance_mistral | parser
@@ -120,6 +80,68 @@ llm_chains = [
         max_requests_per_day=500,
     ),
 ]
+# Initialize components for dynamic message retrieval - Memory feature
+text_splitter = RecursiveCharacterTextSplitter(
+    separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
+)
+mistral_embeddings = MistralAIEmbeddings()
+gemini_flash_embeddings = GoogleGenerativeAIEmbeddings(model="gemini-1.5-flash")
+gemini_flash_8b_embeddings = GoogleGenerativeAIEmbeddings(model="gemini-1.5-flash-8b")
+
+log.info(f"{gemini_ai_flash_8b_chain.name}")
+
+# map over llm_chains to get the model name for each chain and store in a object
+llm_chain_models = {chain.model_name: chain for chain in llm_chains}
+
+
+# get the names of the models from the llm_chain_models object as a list
+llm_chain_models_names = list(llm_chain_models.keys())
+# selectbox display names for the models
+selectbox_display_names = ["Mistral AI", "Gemini AI Flash", "Gemini AI Flash 8B"]
+# map the model names to the display names
+model_name_map = dict(zip(llm_chain_models_names, selectbox_display_names))
+
+
+vectorstores = {
+    "Mistral AI": InMemoryVectorStore(mistral_embeddings),
+    "Gemini AI Flash": InMemoryVectorStore(gemini_flash_embeddings),
+    "Gemini AI Flash 8B": InMemoryVectorStore(gemini_flash_8b_embeddings),
+}
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(2),
+    retry=retry_if_exception_type(KeyError),
+)
+def _add_texts_to_vectorstore(splits):
+    log.info(f"Adding splits to vectorstore: {splits}")
+    st.session_state.vectorstore.add_texts(texts=splits)
+
+
+def add_message_to_history(message_type: str, message: str):
+    log.info(f"Adding message to history: {message}")
+    # Add chat message user or AI response to chat history
+    st.session_state.chat_history.append({"role": message_type, "content": message})
+
+    splits = text_splitter.split_text(message)
+    _add_texts_to_vectorstore(splits)
+
+    time.sleep(2)  # Sleep for 2 second to allow rate limit to reset
+
+
+# Set up the retriever - Memory feature
+# contextualize_q_prompt = ChatPromptTemplate.from_messages(
+#     [
+#         ("system", contextualize_q_system_prompt),
+#         MessagesPlaceholder("chat_history"),
+#         ("human", "{input}"),
+#     ]
+# )
+# retriever = vectorstore.as_retriever()
+# history_aware_retriever = create_history_aware_retriever(
+#     llm_instance_mistral, retriever, contextualize_q_prompt
+# )
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
@@ -208,11 +230,32 @@ def process_response(response):
 def main():
     # Main interaction loop - TerraChat assistant - start the conversation loop
     log.info("Starting new conversation - main loop")
-    if user_question := st.chat_input("Type your question here:"):
+    # create st.selectbox with options for different models and store the selected model in a variable in the session state
+    st.session_state.selected_model = st.selectbox(
+        "Select a model to use",
+        options=llm_chain_models_names,
+        format_func=lambda x: model_name_map.get(x, x),
+        index=None,
+        placeholder="Select a model",
+    )
+    if st.session_state.selected_model:
+        log.info(f"selected model: {st.session_state.selected_model}")
+        log.info(f"{llm_chain_models[st.session_state.selected_model].model_name=}")
+        # Update vectorstore based on selected model
+        st.session_state.vectorstore = vectorstores[
+            model_name_map[st.session_state.selected_model]
+        ]
+        log.info(f"{st.session_state.vectorstore=}")
+    if user_question := st.chat_input(
+        placeholder="Type your question here:",
+        disabled=st.session_state.selected_model == None,
+    ):
         user_prompt = handle_user_input(user_question)
         # Display spinner while generating response
         # Generate response
-        response = generate_response(user_prompt, llm_chains)
+        response = generate_response(
+            user_prompt, [llm_chain_models[st.session_state.selected_model]]
+        )
         with st.spinner("Assistant is thinking..."):
             with st.chat_message("ai"):
                 log.info(f"Final response: {response}")
