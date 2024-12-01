@@ -2,7 +2,7 @@ import re
 from helpers.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from rate_limiter import RateLimiterLLMChain
-from sample_functions import get_weather
+from tools import get_weather
 import time
 
 import streamlit as st
@@ -10,6 +10,7 @@ from langchain.chains import create_history_aware_retriever
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_cohere import ChatCohere
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -23,6 +24,9 @@ st.header("TerraChat")
 
 # Available actions are:
 available_actions = {"get_weather": get_weather}
+available_tools = [
+    get_weather,
+]
 
 # Create LLM instance using Langchain
 llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
@@ -42,7 +46,7 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
     max_retries=2,
     # other params...
 )
-# llm_cohere_instance = ChatMistralAI(model_name="cohere")
+llm_cohere = ChatCohere(model="command-r-plus-08-2024")
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
@@ -103,6 +107,7 @@ parser = StrOutputParser()
 mistral_chain = prompt_template | llm_instance_mistral | parser
 gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
 gemini_ai_flash_8b_chain = prompt_template | llm_gemini_ai_instance_flash_8b | parser
+cohere_chain = prompt_template | llm_cohere | parser
 
 
 # Create LLMChain instances
@@ -118,6 +123,11 @@ llm_chains = [
         llm_chain=gemini_ai_flash_8b_chain,
         max_requests_per_minute=15,
         max_requests_per_day=500,
+    ),
+    RateLimiterLLMChain(
+        llm_chain=cohere_chain,
+        max_requests_per_minute=20,
+        max_requests_per_day=15,
     ),
 ]
 
