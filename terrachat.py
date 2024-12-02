@@ -148,7 +148,7 @@ cohere_chain = prompt_template | llm_cohere | parser
 if "llm_chains" not in st.session_state:
     # Create LLMChain instances
     st.session_state.llm_chains = [
-        Order of chains is important
+        # Order of chains is important
         RateLimiterLLMChain(
             llm_chain=gemini_ai_pro_chain,
             max_requests_per_minute=1,  # 2
