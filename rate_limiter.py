@@ -19,19 +19,43 @@ class RateLimiterLLMChain:
     def calculate_wait_time(self):
         current_time = time.time()
         wait_time = 0
+        log.info(
+            f"{self.request_count=}, {self.last_request_time=}, "
+            f"{self.max_requests_per_minute=}, {self.max_requests_per_day=}"
+        )
+        if self.max_requests_per_day:
+            requests_remaining_today = self.max_requests_per_day - self.request_count
+            log.info(f"{requests_remaining_today=}")
+            if requests_remaining_today <= 0:
+                return float("inf")  # No more requests allowed today
 
         if self.max_requests_per_minute:
-            interval = 60 / self.max_requests_per_minute
-            time_since_last_request = current_time - self.last_request_time
-            if time_since_last_request < interval:
-                wait_time = interval - time_since_last_request
+            requests_remaining_now = self.max_requests_per_minute - self.request_count
+            log.info(f"{requests_remaining_now=}")
+            if requests_remaining_now <= 0:
+                interval = 60 / self.max_requests_per_minute
+                time_since_last_request = current_time - self.last_request_time
+                log.info(f"{interval=}, {time_since_last_request=}")
+                # No more requests allowed now
+                wait_time = max(wait_time, interval - time_since_last_request)
+                return wait_time
 
-        if self.max_requests_per_day:
-            requests_allowed_today = self.max_requests_per_day - self.request_count
-            if requests_allowed_today <= 0:
-                wait_time = float("inf")  # No more requests allowed today
+        log.info(f"{wait_time=}")
+        return wait_time  # No cooldown needed
 
-        return wait_time
+    def is_in_cooldown(self):
+        wait_time = self.calculate_wait_time()
+        if wait_time == float("inf"):
+            log.warning(
+                f"Daily request limit reached for {self.model_name}. Skipping..."
+            )
+            return True
+        if wait_time > 0:
+            log.info(
+                f"Model {self.model_name} is in cooldown for {wait_time:.2f} seconds."
+            )
+            return True
+        return False
 
     def record_request(self):
         self.last_request_time = time.time()
@@ -48,8 +72,8 @@ class RateLimiterLLMChain:
 
         if wait_time > 0:
             log.info(
-                f"Waiting for {wait_time:.2f} seconds before invoking "
-                f"{self.model_name}..."
+                f"Model {self.model_name} is in cooldown. "
+                f"Waiting for {wait_time:.2f} seconds."
             )
             time.sleep(wait_time)
 
