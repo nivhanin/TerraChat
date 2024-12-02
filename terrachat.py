@@ -31,7 +31,7 @@ available_tools = [
 # Create LLM instance using Langchain
 llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
 llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="models/gemini-1.5-flash",
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -39,7 +39,7 @@ llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
     # other params...
 )
 llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash-8b",
+    model="models/gemini-1.5-flash-8b",
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -47,6 +47,22 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
     # other params...
 )
 llm_cohere = ChatCohere(model="command-r-plus-08-2024")
+
+# map model names to display names
+model_display_names = {
+    "open-mistral-nemo": "MistralAI",
+    "models/gemini-1.5-flash": "Gemini AI Flash",
+    "models/gemini-1.5-flash-8b": "Gemini AI Flash 8B",
+    "command-r-plus-08-2024": "Cohere",
+}
+
+# map the model to the images
+model_images = {
+    "open-mistral-nemo": "mistralai.png",
+    "models/gemini-1.5-flash": "gemini.png",
+    "models/gemini-1.5-flash-8b": "gemini.png",
+    "command-r-plus-08-2024": "cohere.png",
+}
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
@@ -66,10 +82,14 @@ def _add_texts_to_vectorstore(splits):
     vectorstore.add_texts(texts=splits)
 
 
-def add_message_to_history(message_type: str, message: str):
+def add_message_to_history(message_type: str, message: str, ai_avatar: str = ""):
     log.info(f"Adding message to history: {message}")
+    chat_message = {"role": message_type, "content": message}
+    if ai_avatar:
+        chat_message["avatar"] = ai_avatar
+    log.info(f"Chat message: {chat_message}")
     # Add chat message user or AI response to chat history
-    st.session_state.chat_history.append({"role": message_type, "content": message})
+    st.session_state.chat_history.append(chat_message)
 
     splits = text_splitter.split_text(message)
     _add_texts_to_vectorstore(splits)
@@ -116,7 +136,7 @@ llm_chains = [
     RateLimiterLLMChain(llm_chain=mistral_chain, max_requests_per_minute=30),
     RateLimiterLLMChain(
         llm_chain=gemini_ai_flash_chain,
-        max_requests_per_minute=15,
+        max_requests_per_minute=60,
         max_requests_per_day=1,
     ),
     RateLimiterLLMChain(
@@ -137,7 +157,8 @@ if "chat_history" not in st.session_state:
 
 # Display chat messages from history on app rerun
 for session_message in st.session_state.chat_history:
-    with st.chat_message(session_message["role"]):
+    log.info(f"Session message: {session_message}")
+    with st.chat_message(session_message["role"], avatar=session_message.get("avatar", None)):
         st.markdown(session_message["content"])
 
 
@@ -173,6 +194,7 @@ def generate_response(user_prompt, chains):
         if response:
             model_name = llm_chain.model_name
             log.info(f"Response from {model_name=}: {response}")
+            st.session_state.model_name = model_name
             return process_response(response)
     log.warning("No available LLM chain could provide a response.")
     return "No available LLM chain could provide a response."
@@ -224,7 +246,7 @@ def main():
         # Generate response
         response = generate_response(user_prompt, llm_chains)
         with st.spinner("Assistant is thinking..."):
-            with st.chat_message("ai"):
+            with st.chat_message("ai", avatar=f"images/{model_images[st.session_state.model_name]}"):
                 log.info(f"Final response: {response}")
                 # Add the AI response to history and inform the user
                 try:
@@ -232,8 +254,11 @@ def main():
                 except IndexError:
                     answer_data = response
                     log.error("IndexError: No answer data found!")
-                add_message_to_history("ai", answer_data)
+                add_message_to_history(
+                    "ai", answer_data, ai_avatar=f"images/{model_images[st.session_state.model_name]}")
                 st.markdown(answer_data)
+                st.caption(
+                    f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})")
 
 
 if __name__ == "__main__":
