@@ -1,4 +1,6 @@
 import re
+
+from numpy import False_
 from helpers.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from rate_limiter import RateLimiterLLMChain
@@ -96,11 +98,13 @@ def _add_texts_to_vectorstore(splits):
     vectorstore.add_texts(texts=splits)
 
 
-def add_message_to_history(message_type: str, message: str, ai_avatar: str = ""):
+def add_message_to_history(message_type: str, message: str, ai_avatar: str = "", source: str = ""):
     log.info(f"Adding message to history: {message}")
     chat_message = {"role": message_type, "content": message}
     if ai_avatar:
         chat_message["avatar"] = ai_avatar
+    if source:
+        chat_message["source"] = source
     log.info(f"Chat message: {chat_message}")
     # Add chat message user or AI response to chat history
     st.session_state.chat_history.append(chat_message)
@@ -148,7 +152,7 @@ cohere_chain = prompt_template | llm_cohere | parser
 if "llm_chains" not in st.session_state:
     # Create LLMChain instances
     st.session_state.llm_chains = [
-        Order of chains is important
+        # Order of chains is important
         RateLimiterLLMChain(
             llm_chain=gemini_ai_pro_chain,
             max_requests_per_minute=1,  # 2
@@ -174,12 +178,16 @@ if "llm_chains" not in st.session_state:
             max_requests_per_minute=1,  # 20
             max_requests_per_day=1,  # 1000 per month (approx 32 per day)
         ),
-        RateLimiterLLMChain(llm_chain=mistral_chain, max_requests_per_minute=4),  # 30
+        RateLimiterLLMChain(llm_chain=mistral_chain,
+                            max_requests_per_minute=4, max_requests_per_day=1),  # 30
     ]
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = [
+        {"role": "assistant", "content": "How may I assist you today?"}]
+
+# if
 
 # Display chat messages from history on app rerun
 for session_message in st.session_state.chat_history:
@@ -188,12 +196,26 @@ for session_message in st.session_state.chat_history:
         session_message["role"], avatar=session_message.get("avatar", None)
     ):
         st.markdown(session_message["content"])
+        # Only show source caption for AI responses
+        if (
+            session_message["role"] in ["ai", "assistant"]
+            and "model_name" in st.session_state
+        ):
+            model = session_message.get("source", None)
+            if model:
+                st.caption(
+                    f"Source: {model_display_names[model]} ({model})"
+                )
 
 
 def handle_user_input(user_question):
+    # Create a chat message container for the user's message
     with st.chat_message("user"):
-        st.markdown(user_question)
+        st.write(user_question)
+
+    # Add message to history
     add_message_to_history("human", user_question)
+
     return {
         "input": user_question,
         "chat_history": st.session_state.chat_history,
@@ -229,7 +251,7 @@ def generate_response(user_prompt, chains):
             st.session_state.model_name = model_name
             return process_response(response)
     log.warning("No available LLM chain could provide a response.")
-    return "No available LLM chain could provide a response."
+    return False
 
 
 def process_response(response):
@@ -264,7 +286,8 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(result, st.session_state.llm_chains)
+        response = run_chains_with_function_result(
+            result, st.session_state.llm_chains)
         turn_count += 1
     return response
 
@@ -277,14 +300,20 @@ def main():
         # Display spinner while generating response
         # Generate response
         response = generate_response(user_prompt, st.session_state.llm_chains)
-        with st.spinner("Assistant is thinking..."):
-            log.info(f"!!! st session state: {st.session_state} !!!")
+        if not response:
+            response = "No available LLM chain could provide a response."
+            ai_avatar = "ai"
+            model_caption = ""
+        else:
             ai_avatar = (
                 f"images/{model_images[st.session_state.model_name]}"
                 if model_images[st.session_state.model_name]
                 else ""
             )
-            with st.chat_message("ai", avatar=ai_avatar):
+            model_caption = f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
+        with st.chat_message("ai", avatar=ai_avatar):
+            with st.spinner("Assistant is thinking..."):
+
                 log.info(f"Final response: {response}")
                 # Add the AI response to history and inform the user
                 try:
@@ -297,11 +326,11 @@ def main():
                     "ai",
                     answer_data,
                     ai_avatar=ai_avatar,
+                    source=st.session_state.model_name,
                 )
                 st.markdown(answer_data)
-                st.caption(
-                    f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
-                )
+                if model_caption:
+                    st.caption(model_caption)
 
 
 if __name__ == "__main__":
