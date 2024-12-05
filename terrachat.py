@@ -312,25 +312,23 @@ def main():
             )
             model_caption = f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
         with st.chat_message("ai", avatar=ai_avatar):
-            with st.spinner("Assistant is thinking..."):
+            log.info(f"Final response: {response}")
+            # Add the AI response to history and inform the user
+            try:
+                answer_data = response.split("Answer:")[1]
+            except IndexError:
+                answer_data = response
+                log.error("IndexError: No answer data found!")
 
-                log.info(f"Final response: {response}")
-                # Add the AI response to history and inform the user
-                try:
-                    answer_data = response.split("Answer:")[1]
-                except IndexError:
-                    answer_data = response
-                    log.error("IndexError: No answer data found!")
-
-                add_message_to_history(
-                    "ai",
-                    answer_data,
-                    ai_avatar=ai_avatar,
-                    source=st.session_state.model_name,
-                )
-                st.markdown(answer_data)
-                if model_caption:
-                    st.caption(model_caption)
+            add_message_to_history(
+                "ai",
+                answer_data,
+                ai_avatar=ai_avatar,
+                source=st.session_state.model_name,
+            )
+            st.markdown(answer_data)
+            if model_caption:
+                st.caption(model_caption)
 
 
 if __name__ == "__main__":
