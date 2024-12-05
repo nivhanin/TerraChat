@@ -23,6 +23,7 @@ from utils.logger import log
 
 
 st.header("TerraChat")
+show_sources = st.toggle("Show AI Sources", value=False)
 
 # Available actions are:
 available_actions = {"get_weather": get_weather}
@@ -98,7 +99,9 @@ def _add_texts_to_vectorstore(splits):
     vectorstore.add_texts(texts=splits)
 
 
-def add_message_to_history(message_type: str, message: str, ai_avatar: str = "", source: str = ""):
+def add_message_to_history(
+    message_type: str, message: str, ai_avatar: str = "", source: str = ""
+):
     log.info(f"Adding message to history: {message}")
     chat_message = {"role": message_type, "content": message}
     if ai_avatar:
@@ -192,20 +195,23 @@ if "chat_history" not in st.session_state:
 # Display chat messages from history on app rerun
 for session_message in st.session_state.chat_history:
     log.info(f"Session message: {session_message}")
-    with st.chat_message(
-        session_message["role"], avatar=session_message.get("avatar", None)
-    ):
+    # Only show avatar if toggle is on and it's an AI message
+    display_avatar = (
+        session_message.get("avatar", None)
+        if show_sources or session_message["role"] == "human"
+        else None
+    )
+    with st.chat_message(session_message["role"], avatar=display_avatar):
         st.markdown(session_message["content"])
-        # Only show source caption for AI responses
+        # Only show source caption for AI responses if toggle is on
         if (
-            session_message["role"] in ["ai", "assistant"]
+            show_sources
+            and session_message["role"] in ["ai", "assistant"]
             and "model_name" in st.session_state
         ):
             model = session_message.get("source", None)
             if model:
-                st.caption(
-                    f"Source: {model_display_names[model]} ({model})"
-                )
+                st.caption(f"Source: {model_display_names[model]} ({model})")
 
 
 def handle_user_input(user_question):
@@ -311,14 +317,17 @@ def main():
                 else ""
             )
             model_caption = f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
-        with st.chat_message("ai", avatar=ai_avatar):
+        with st.chat_message("ai", avatar=(ai_avatar if show_sources else None)):
             log.info(f"Final response: {response}")
-            # Add the AI response to history and inform the user
             try:
                 answer_data = response.split("Answer:")[1]
             except IndexError:
                 answer_data = response
                 log.error("IndexError: No answer data found!")
+
+            st.markdown(answer_data)
+            if show_sources and model_caption:  # Only show caption if toggle is on
+                st.caption(model_caption)
 
             add_message_to_history(
                 "ai",
@@ -326,9 +335,6 @@ def main():
                 ai_avatar=ai_avatar,
                 source=st.session_state.model_name,
             )
-            st.markdown(answer_data)
-            if model_caption:
-                st.caption(model_caption)
 
 
 if __name__ == "__main__":
