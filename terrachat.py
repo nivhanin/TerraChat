@@ -21,8 +21,20 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from utils.logger import log
 
+terra_ai_logo = "images/terra_ai.png"
 
-st.header("TerraChat")
+st.set_page_config(
+    page_title="TerraChat",
+    page_icon=terra_ai_logo,
+    layout="centered",
+)
+st.header("TerraChat", divider="gray")
+
+st.logo(
+    terra_ai_logo,
+    icon_image=terra_ai_logo,
+)
+
 show_sources = st.toggle("Show AI Sources", value=False)
 
 # Available actions are:
@@ -188,7 +200,7 @@ if "llm_chains" not in st.session_state:
 # Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "How may I assist you today?"}]
+        {"role": "ai", "content": "How may I assist you today?", "avatar": terra_ai_logo}]
 
 # if
 
@@ -198,9 +210,11 @@ for session_message in st.session_state.chat_history:
     # Only show avatar if toggle is on and it's an AI message
     display_avatar = (
         session_message.get("avatar", None)
-        if show_sources or session_message["role"] == "human"
-        else None
+        if show_sources and session_message["role"] in ["ai", "assistant"]
+        else terra_ai_logo
     )
+    if session_message["role"] in ["user", "human"]:
+        display_avatar = None
     with st.chat_message(session_message["role"], avatar=display_avatar):
         st.markdown(session_message["content"])
         # Only show source caption for AI responses if toggle is on
@@ -308,7 +322,7 @@ def main():
         response = generate_response(user_prompt, st.session_state.llm_chains)
         if not response:
             response = "No available LLM chain could provide a response."
-            ai_avatar = "ai"
+            ai_avatar = terra_ai_logo
             model_caption = ""
         else:
             ai_avatar = (
@@ -317,7 +331,7 @@ def main():
                 else ""
             )
             model_caption = f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
-        with st.chat_message("ai", avatar=(ai_avatar if show_sources else None)):
+        with st.chat_message("ai", avatar=(ai_avatar if show_sources else terra_ai_logo)):
             log.info(f"Final response: {response}")
             try:
                 answer_data = response.split("Answer:")[1]
