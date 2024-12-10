@@ -1,7 +1,8 @@
 import re
 import time
+import uvicorn
 
-import streamlit as st
+from fastapi import FastAPI
 from langchain.chains import create_history_aware_retriever
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -11,6 +12,7 @@ from langchain_cohere import ChatCohere
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pydantic import BaseModel
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from helpers.json_helpers import extract_json_from_text
@@ -20,21 +22,15 @@ from tools import get_weather
 from utils.logger import log
 
 
+app = FastAPI()
+
 terra_ai_logo = "images/terra_ai.png"
 
-st.set_page_config(
-    page_title="TerraChat",
-    page_icon=terra_ai_logo,
-    layout="centered",
-)
-st.header("TerraChat", divider="gray")
 
-st.logo(
-    terra_ai_logo,
-    icon_image=terra_ai_logo,
-)
+# Define a model for incoming requests
+class UserInput(BaseModel):
+    question: str
 
-show_sources = st.toggle("Show AI Sources", value=False)
 
 # Available actions are:
 available_actions = {"get_weather": get_weather}
@@ -70,7 +66,6 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
 )
 llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
 llm_cohere = ChatCohere(model="command-r-08-2024")
-
 
 # map model names to display names
 model_display_names = {
@@ -120,13 +115,12 @@ def add_message_to_history(
     if source:
         chat_message["source"] = source
     log.info(f"Chat message: {chat_message}")
-    # Add chat message user or AI response to chat history
-    st.session_state.chat_history.append(chat_message)
+    app.state.chat_history.append(chat_message)
 
     splits = text_splitter.split_text(message)
     _add_texts_to_vectorstore(splits)
 
-    time.sleep(2)  # Sleep for 2 second to allow rate limit to reset
+    time.sleep(2)
 
 
 # Set up the prompt template
@@ -163,106 +157,86 @@ gemini_ai_flash_8b_chain = prompt_template | llm_gemini_ai_instance_flash_8b | p
 cohere_plus_chain = prompt_template | llm_cohere_plus | parser
 cohere_chain = prompt_template | llm_cohere | parser
 
-if "llm_chains" not in st.session_state:
-    # Create LLMChain instances
-    st.session_state.llm_chains = [
-        # Order of chains is important
-        RateLimiterLLMChain(
-            llm_chain=gemini_ai_pro_chain,
-            max_requests_per_minute=1,  # 2
-            max_requests_per_day=1,  # 50
-        ),
-        RateLimiterLLMChain(
-            llm_chain=gemini_ai_flash_chain,
-            max_requests_per_minute=1,  # 15
-            max_requests_per_day=1,  # 1500
-        ),
-        RateLimiterLLMChain(
-            llm_chain=gemini_ai_flash_8b_chain,
-            max_requests_per_minute=1,  # 15
-            max_requests_per_day=1,  # 1500
-        ),
-        RateLimiterLLMChain(
-            llm_chain=cohere_plus_chain,
-            max_requests_per_minute=1,  # 20
-            max_requests_per_day=1,  # 1000 per month (approx 32 per day)
-        ),
-        RateLimiterLLMChain(
-            llm_chain=cohere_chain,
-            max_requests_per_minute=1,  # 20
-            max_requests_per_day=1,  # 1000 per month (approx 32 per day)
-        ),
-        RateLimiterLLMChain(
-            llm_chain=mistral_chain,
-            max_requests_per_minute=4,  # 30
-            max_requests_per_day=1,  # infinite
-        ),
-    ]
+# Initialize chat history and LLM chains
+app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
+app.state.llm_chains = [
+    # Order of chains is important
+    RateLimiterLLMChain(
+        llm_chain=gemini_ai_pro_chain,
+        max_requests_per_minute=1,  # 2
+        max_requests_per_day=1,  # 50
+    ),
+    RateLimiterLLMChain(
+        llm_chain=gemini_ai_flash_chain,
+        max_requests_per_minute=1,  # 15
+        max_requests_per_day=1,  # 1500
+    ),
+    RateLimiterLLMChain(
+        llm_chain=gemini_ai_flash_8b_chain,
+        max_requests_per_minute=1,  # 15
+        max_requests_per_day=1,  # 1500
+    ),
+    RateLimiterLLMChain(
+        llm_chain=cohere_plus_chain,
+        max_requests_per_minute=1,  # 20
+        max_requests_per_day=1,  # 1000 per month (approx 32 per day)
+    ),
+    RateLimiterLLMChain(
+        llm_chain=cohere_chain,
+        max_requests_per_minute=1,  # 20
+        max_requests_per_day=1,  # 1000 per month (approx 32 per day)
+    ),
+    RateLimiterLLMChain(
+        llm_chain=mistral_chain,
+        max_requests_per_minute=4,  # 30
+        max_requests_per_day=1,  # infinite
+    ),
+]
 
-# Initialize chat history
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        {
-            "role": "ai",
-            "content": "How may I assist you today?",
-            "avatar": terra_ai_logo,
-        }
-    ]
 
-# if
+@app.post("/ask")
+async def ask_question(user_input: UserInput):
+    user_question = user_input.question
+    log.info(f"Received question: {user_question}")
 
-# Display chat messages from history on app rerun
-for session_message in st.session_state.chat_history:
-    log.info(f"Session message: {session_message}")
-    # Only show avatar if toggle is on and it's an AI message
-    display_avatar = (
-        session_message.get("avatar", None)
-        if show_sources and session_message["role"] in ["ai", "assistant"]
-        else terra_ai_logo
+    user_prompt = handle_user_input(user_question)
+    response, model_name = generate_response(user_prompt, app.state.llm_chains)
+    if not response:
+        response = "No available LLM chain could provide a response."
+        ai_avatar = terra_ai_logo
+        model_caption = ""
+    else:
+        ai_avatar = (
+            f"images/{model_images[model_name]}" if model_images[model_name] else ""
+        )
+        model_caption = f"{model_display_names[model_name]} ({model_name})"
+
+    log.info(f"Final response: {response}")
+    try:
+        answer_data = response.split("Answer:")[1]
+    except IndexError:
+        answer_data = response
+        log.error("No 'Answer:' prefix found or no answer data after it!")
+
+    add_message_to_history(
+        "ai",
+        answer_data,
+        ai_avatar=ai_avatar,
+        source=model_name,
     )
-    if session_message["role"] in ["user", "human"]:
-        display_avatar = None
-    with st.chat_message(session_message["role"], avatar=display_avatar):
-        st.markdown(session_message["content"])
-        # Only show source caption for AI responses if toggle is on
-        if (
-            show_sources
-            and session_message["role"] in ["ai", "assistant"]
-            and "model_name" in st.session_state
-        ):
-            model = session_message.get("source", None)
-            if model:
-                st.caption(f"Source: {model_display_names[model]} ({model})")
+    return {
+        "response": answer_data,
+        "source": model_caption,
+        "ai_avatar": ai_avatar,
+    }
 
 
-def handle_user_input(user_question):
-    # Create a chat message container for the user's message
-    with st.chat_message("user"):
-        st.write(user_question)
-
-    # Add message to history
+def handle_user_input(user_question: str):
     add_message_to_history("human", user_question)
-
     return {
         "input": user_question,
-        "chat_history": st.session_state.chat_history,
+        "chat_history": app.state.chat_history,
     }
-
-
-def run_chains_with_function_result(result, chains):
-    function_result_message = f"Action_Response: {result}"
-    log.info(function_result_message)
-    user_prompt = {
-        "input": function_result_message,
-        "chat_history": st.session_state.chat_history,
-    }
-    for llm_chain in chains:
-        response = llm_chain.run_invoke(user_prompt)
-        if response:
-            # Successfully invoked a chain, exit loop
-            return response
-
-    return "Error: No available LLM chain could provide a response."
 
 
 def generate_response(user_prompt, chains):
@@ -275,10 +249,10 @@ def generate_response(user_prompt, chains):
         if response:
             model_name = llm_chain.model_name
             log.info(f"Response from {model_name=}: {response}")
-            st.session_state.model_name = model_name
-            return process_response(response)
+            app.state.model_name = model_name
+            return process_response(response), model_name
     log.warning("No available LLM chain could provide a response.")
-    return False
+    return "No available LLM chain could provide a response.", ""
 
 
 def process_response(response):
@@ -291,11 +265,10 @@ def process_response(response):
         if not json_function:
             break
 
-        # time.sleep(2) # sleep moved to cooldown function in run_invoke
         try:
             function_name = json_function[0]["function_name"]
             function_params = json_function[0]["function_params"]
-        except KeyError as e:
+        except KeyError:
             match = re.search(r"Answer:\s*(.+)", response, re.DOTALL)
             if match:
                 answer_data = match.group(1)
@@ -313,51 +286,25 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(result, st.session_state.llm_chains)
+        response = run_chains_with_function_result(result, app.state.llm_chains)
         turn_count += 1
     return response
 
 
-def main():
-    # Main interaction loop - TerraChat assistant - start the conversation loop
-    log.info("Starting new conversation - main loop")
-    if user_question := st.chat_input("Type your question here:"):
-        user_prompt = handle_user_input(user_question)
-        # Display spinner while generating response
-        # Generate response
-        response = generate_response(user_prompt, st.session_state.llm_chains)
-        if not response:
-            response = "No available LLM chain could provide a response."
-            ai_avatar = terra_ai_logo
-            model_caption = ""
-        else:
-            ai_avatar = (
-                f"images/{model_images[st.session_state.model_name]}"
-                if model_images[st.session_state.model_name]
-                else ""
-            )
-            model_caption = f"Source: {model_display_names[st.session_state.model_name]} ({st.session_state.model_name})"
-        with st.chat_message(
-            "ai", avatar=(ai_avatar if show_sources else terra_ai_logo)
-        ):
-            log.info(f"Final response: {response}")
-            try:
-                answer_data = response.split("Answer:")[1]
-            except IndexError:
-                answer_data = response
-                log.error("IndexError: No answer data found!")
-
-            st.markdown(answer_data)
-            if show_sources and model_caption:  # Only show caption if toggle is on
-                st.caption(model_caption)
-
-            add_message_to_history(
-                "ai",
-                answer_data,
-                ai_avatar=ai_avatar,
-                source=st.session_state.model_name,
-            )
+def run_chains_with_function_result(result, chains):
+    function_result_message = f"Action_Response: {result}"
+    log.info(function_result_message)
+    user_prompt = {
+        "input": function_result_message,
+        "chat_history": app.state.chat_history,
+    }
+    for llm_chain in chains:
+        response = llm_chain.run_invoke(user_prompt)
+        if response:
+            # Successfully invoked a chain, exit loop
+            return response
+    return "Error: No available LLM chain could provide a response."
 
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
