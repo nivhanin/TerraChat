@@ -77,25 +77,6 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
 llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
 llm_cohere = ChatCohere(model="command-r-08-2024")
 
-# map model names to display names
-model_display_names = {
-    "open-mistral-nemo": "MistralAI",
-    "models/gemini-1.5-pro": "Gemini AI Pro",
-    "models/gemini-1.5-flash": "Gemini AI Flash",
-    "models/gemini-1.5-flash-8b": "Gemini AI Flash 8B",
-    "command-r-plus-08-2024": "Cohere+",
-    "command-r-08-2024": "Cohere",
-}
-
-# map the model to the images
-model_images = {
-    "open-mistral-nemo": "mistralai.png",
-    "models/gemini-1.5-pro": "gemini_pro.png",
-    "models/gemini-1.5-flash": "gemini.png",
-    "models/gemini-1.5-flash-8b": "gemini_8b.png",
-    "command-r-plus-08-2024": "cohere_plus.png",
-    "command-r-08-2024": "cohere.png",
-}
 
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
@@ -115,13 +96,9 @@ def _add_texts_to_vectorstore(splits):
     vectorstore.add_texts(texts=splits)
 
 
-def add_message_to_history(
-    message_type: str, message: str, ai_avatar: str = "", source: str = ""
-):
+def add_message_to_history(message_type: str, message: str, source: str = ""):
     log.info(f"Adding message to history: {message}")
     chat_message = {"role": message_type, "content": message}
-    if ai_avatar:
-        chat_message["avatar"] = ai_avatar
     if source:
         chat_message["source"] = source
     log.info(f"Chat message: {chat_message}")
@@ -214,13 +191,8 @@ async def ask_question(user_input: UserInput):
     response, model_name = generate_response(user_prompt, app.state.llm_chains)
     if not response:
         response = "No available LLM chain could provide a response."
-        ai_avatar = terra_ai_logo
-        model_caption = ""
-    else:
-        ai_avatar = (
-            f"images/{model_images[model_name]}" if model_images[model_name] else ""
-        )
-        model_caption = f"{model_display_names[model_name]} ({model_name})"
+        log.info(response)
+        return {"response": response, "source": ""}
 
     log.info(f"Final response: {response}")
     try:
@@ -232,13 +204,11 @@ async def ask_question(user_input: UserInput):
     add_message_to_history(
         "ai",
         answer_data,
-        ai_avatar=ai_avatar,
         source=model_name,
     )
     return {
         "response": answer_data,
-        "source": model_caption,
-        "ai_avatar": ai_avatar,
+        "source": model_name,
     }
 
 
