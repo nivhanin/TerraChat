@@ -3,6 +3,7 @@ import time
 import uvicorn
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from langchain.chains import create_history_aware_retriever
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -23,6 +24,15 @@ from utils.logger import log
 
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5174"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 terra_ai_logo = "images/terra_ai.png"
 
@@ -158,7 +168,8 @@ cohere_plus_chain = prompt_template | llm_cohere_plus | parser
 cohere_chain = prompt_template | llm_cohere | parser
 
 # Initialize chat history and LLM chains
-app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
+app.state.chat_history = [
+    {"role": "ai", "content": "How may I assist you today?"}]
 app.state.llm_chains = [
     # Order of chains is important
     RateLimiterLLMChain(
@@ -286,7 +297,8 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(result, app.state.llm_chains)
+        response = run_chains_with_function_result(
+            result, app.state.llm_chains)
         turn_count += 1
     return response
 
