@@ -1,15 +1,31 @@
 import { useState } from 'react';
-import { Paper, Button, Box, TextField } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
+import { Button, Box, TextField, Typography, InputAdornment, styled } from '@mui/material';
+import TerraSvg from '../../images/TerraSvg';
+import SendActive from '../../images/SendActive'; // Adjust the import based on your file structure
 import MessageList from './MessageList';
 import { Message } from '../types';
-import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from './Sidebar';
+import { useTheme } from '../contexts/ThemeContext';
+import SendSvg from '../../images/Send';
 
-interface ChatProps {
-  sidebarExpanded: boolean;
-}
+const CssTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    background: theme.palette.mode === 'dark' ? '#292823' : '#FFF',
+    '& fieldset': {
+      border: `1px solid ${theme.palette.mode === 'dark' ? '#413F38' : '#D4D2CA'}`,
+    },
+    '&:hover fieldset': {
+      //todo: discuss madina regarding this behaviour
+    },
+    '&.Mui-focused': {
+      '& fieldset': {
+        border: `2px solid ${theme.palette.mode === 'dark' ? '#413F38' : '#D4D2CA'}`,
+      },
+    },
+  },
+}));
 
-export const Chat = ({ sidebarExpanded }: ChatProps) => {
+export const Chat = () => {
+  const { isDarkMode } = useTheme(); // Get the current theme
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -66,81 +82,130 @@ export const Chat = ({ sidebarExpanded }: ChatProps) => {
   };
 
   return (
-    <Box sx={{ position: 'relative', height: '100%' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
+      {messages.length < 1 ? (
+        <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box
+            sx={{
+              mt: 8,
+              mb: 6,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <TerraSvg />
+            <Typography
+              variant='h4'
+              sx={{
+                textAlign: 'center',
+                color: 'text.primary',
+                fontSize: '36px',
+                fontWeight: '600',
+                lineHeight: '48px',
+                letterSpacing: '0.72px',
+              }}
+            >
+              Woof, how can I help you?
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: 'auto',
+              p: 2,
+              pb: '100px',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'action.hover',
+                borderRadius: '4px',
+              },
+            }}
+          >
+            <MessageList messages={messages} isLoading={isLoading} />
+          </Box>
+        </Box>
+      )}
+
       <Box
         sx={{
-          height: 'calc(100% - 80px)',
-          overflow: 'auto',
-          pb: 2,
-          '&::-webkit-scrollbar': {
-            width: '8px',
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'action.hover',
-            borderRadius: '4px',
-          },
-        }}
-      >
-        <MessageList messages={messages} isLoading={isLoading} />
-      </Box>
-
-      <Paper
-        elevation={3}
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: sidebarExpanded ? DRAWER_WIDTH : MINI_DRAWER_WIDTH,
+          position: 'absolute',
+          left: 0,
           right: 0,
-          p: 2,
-          bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.800' : 'background.paper'),
-          borderTop: 1,
-          borderColor: 'divider',
-          mx: 3,
-          mb: 3,
-          borderRadius: 2,
+          ...(messages.length > 1 || isLoading ? { bottom: 0 } : { top: '50%' }),
+          p: 4,
           zIndex: 1100,
         }}
       >
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
+        <Box
+          sx={{ maxWidth: '800px', mx: 'auto', display: 'flex', gap: 1, justifyContent: 'center' }}
+        >
+          <CssTextField
             fullWidth
             multiline
             maxRows={4}
             variant='outlined'
-            placeholder='Type your message...'
+            placeholder='Chat with Terra'
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={isLoading}
             sx={{
+              maxWidth: '600px',
               '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 255, 255, 0.23)'
-                      : 'rgba(0, 0, 0, 0.23)',
-                },
+                borderRadius: 3,
               },
             }}
-          />
-          <Button
-            variant='contained'
-            endIcon={<SendIcon />}
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            sx={{
-              transform: isLoading ? 'rotate(360deg)' : 'none',
-              transition: 'transform 0.5s',
-              alignSelf: 'flex-start',
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position='start'>
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    sx={{
+                      minWidth: 'auto',
+                      borderRadius: '50%',
+                      ...((input.trim() || !isLoading) && {
+                        '&:hover': {
+                          backgroundColor: 'rgba(240, 203, 12, 0.16)',
+                        },
+                      }),
+                    }}
+                  >
+                    {!input.trim() || isLoading ? (
+                      <SendSvg color={isDarkMode ? '#656359' : '#E3E0D5'} />
+                    ) : (
+                      <SendActive />
+                    )}
+                  </Button>
+                </InputAdornment>
+              ),
             }}
-          >
-            Send
-          </Button>
+          />
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 };

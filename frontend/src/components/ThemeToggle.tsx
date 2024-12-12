@@ -1,14 +1,23 @@
-import IconButton from '@mui/material/IconButton';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { IconButton } from '@mui/material';
 import { useTheme } from '../contexts/ThemeContext';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 
 export const ThemeToggle = () => {
   const { isDarkMode, toggleTheme } = useTheme();
 
   return (
-    <IconButton onClick={toggleTheme} color='inherit'>
-      {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+    <IconButton
+      onClick={toggleTheme}
+      sx={{
+        color: 'text.secondary',
+        '&:hover': {
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+        },
+      }}
+    >
+      {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
     </IconButton>
   );
 };

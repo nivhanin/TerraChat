@@ -1,6 +1,8 @@
+export type MessageRoles = 'user' | 'assistant' | 'human' | 'ai';
+
 export type Message = {
   id: number;
   content: string;
-  role: 'user' | 'assistant';
+  role: MessageRoles;
   source?: 'gemini' | 'cohere' | 'mistral' | 'claude';
 };
