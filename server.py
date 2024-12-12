@@ -1,3 +1,4 @@
+import os
 import re
 import time
 import uvicorn
@@ -145,8 +146,7 @@ cohere_plus_chain = prompt_template | llm_cohere_plus | parser
 cohere_chain = prompt_template | llm_cohere | parser
 
 # Initialize chat history and LLM chains
-app.state.chat_history = [
-    {"role": "ai", "content": "How may I assist you today?"}]
+app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
 app.state.llm_chains = [
     # Order of chains is important
     RateLimiterLLMChain(
@@ -180,6 +180,18 @@ app.state.llm_chains = [
         max_requests_per_day=1,  # infinite
     ),
 ]
+
+
+@app.get("/llms")
+async def llms():
+    # return json response that validate if each llm api-key is valid (not none)
+    return {
+        "LANGCHAIN_API_KEY": os.getenv("LANGCHAIN_API_KEY") is not None,
+        "HF_TOKEN": os.getenv("HF_TOKEN") is not None,
+        "COHERE_API_KEY": os.getenv("COHERE_API_KEY") is not None,
+        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
+        "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") is not None,
+    }
 
 
 @app.post("/ask")
@@ -267,8 +279,7 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(
-            result, app.state.llm_chains)
+        response = run_chains_with_function_result(result, app.state.llm_chains)
         turn_count += 1
     return response
 
