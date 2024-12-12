@@ -37,7 +37,7 @@ const ModelAvatar: React.FC<ModelAvatarProps> = ({ source }) => {
         borderRadius: 2,
       }}
     >
-      <Avatar src={avatarUrl} alt={modelName} sx={{ width: 40, height: 40 }} />
+      <Avatar src={avatarUrl} alt={modelName} sx={{ width: 36, height: 36 }} variant='square' />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant='body1' sx={{ fontWeight: 'bold', color: 'text.primary' }}>
           {modelName}
