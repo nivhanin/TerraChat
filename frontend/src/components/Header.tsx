@@ -1,5 +1,6 @@
-import { Avatar, Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import { ThemeToggle } from './ThemeToggle';
+import ArticleIcon from '@mui/icons-material/Article';
 
 export const Header = () => {
   return (
@@ -9,7 +10,7 @@ export const Header = () => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        p: 2,
+        px: 3,
         borderBottom: 1,
         borderColor: 'divider',
         bgcolor: 'background.paper',
@@ -17,18 +18,17 @@ export const Header = () => {
         zIndex: 1200,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Avatar
-          variant='square'
-          src='/images/terra_ai.png'
-          alt='AI Assistant'
-          sx={{ width: 40, height: 40 }}
-        />
-        <Typography variant='h6' component='h1' sx={{ fontWeight: 'bold' }}>
-          TerraChat
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant='h6' sx={{ fontWeight: 600 }}>
+          Terra Chat
         </Typography>
       </Box>
-      <ThemeToggle />
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Button variant='text' startIcon={<ArticleIcon />} sx={{ color: 'text.secondary' }}>
+          Documentation
+        </Button>
+        <ThemeToggle />
+      </Box>
     </Box>
   );
 };
