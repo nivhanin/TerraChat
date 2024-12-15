@@ -10,7 +10,10 @@ class RateLimiterLLMChain:
         max_requests_per_day=None,
     ):
         self.llm_chain = llm_chain
-        self.model_name = llm_chain.middle[0].model
+        try:
+            self.model_name = llm_chain.middle[0].model
+        except AttributeError:
+            self.model_name = llm_chain.middle[0].model_name
         self.max_requests_per_minute = max_requests_per_minute
         self.max_requests_per_day = max_requests_per_day
         self.last_request_time = time.time()
