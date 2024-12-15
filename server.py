@@ -13,6 +13,7 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_cohere import ChatCohere
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_xai import ChatXAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
@@ -77,6 +78,7 @@ llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
 )
 llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
 llm_cohere = ChatCohere(model="command-r-08-2024")
+llm_xai = ChatXAI(model="grok-2-1212")
 
 
 # Initialize components for dynamic message retrieval - Memory feature
@@ -144,16 +146,21 @@ gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
 gemini_ai_flash_8b_chain = prompt_template | llm_gemini_ai_instance_flash_8b | parser
 cohere_plus_chain = prompt_template | llm_cohere_plus | parser
 cohere_chain = prompt_template | llm_cohere | parser
+xai_chain = prompt_template | llm_xai | parser
 
 # Initialize chat history and LLM chains
-app.state.chat_history = [
-    {"role": "ai", "content": "How may I assist you today?"}]
+app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
 app.state.llm_chains = [
     # Order of chains is important
     RateLimiterLLMChain(
         llm_chain=gemini_ai_pro_chain,
         max_requests_per_minute=1,  # 2
         max_requests_per_day=1,  # 50
+    ),
+    RateLimiterLLMChain(
+        llm_chain=xai_chain,
+        max_requests_per_minute=1,  # 60 RPM 1200 RPH -> 20 RPM
+        max_requests_per_day=1,  # infinite
     ),
     RateLimiterLLMChain(
         llm_chain=gemini_ai_flash_chain,
@@ -192,6 +199,7 @@ async def llms():
         "COHERE_API_KEY": os.getenv("COHERE_API_KEY") is not None,
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
         "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") is not None,
+        "XAI_API_KEY": os.getenv("XAI_API_KEY") is not None,
     }
 
 
@@ -280,8 +288,7 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(
-            result, app.state.llm_chains)
+        response = run_chains_with_function_result(result, app.state.llm_chains)
         turn_count += 1
     return response
 
