@@ -24,41 +24,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         paper: isDarkMode ? '#1A1914' : '#F5F4F0',
       },
       primary: {
-        main: '#3a8ef6',
+        main: '#F0CB0C',
       },
       text: {
-        primary: isDarkMode ? '#FFFFFF' : '#28261C',
+        primary: isDarkMode ? '#F5F4F0' : '#28261C',
         secondary: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       },
       divider: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
     },
-    typography: {
-      h1: {
-        fontSize: '2.5rem',
-        fontWeight: 600,
-        lineHeight: 1.2,
-      },
-      body1: {
-        fontSize: '1rem',
-        lineHeight: 1.5,
-      },
-    },
     shape: {
-      borderRadius: 12,
+      borderRadius: 33.3,
     },
     components: {
       MuiPaper: {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
-          },
-        },
-      },
-      MuiButton: {
-        styleOverrides: {
-          root: {
-            textTransform: 'none',
-            borderRadius: 12,
           },
         },
       },

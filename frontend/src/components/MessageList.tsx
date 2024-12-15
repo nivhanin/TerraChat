@@ -30,7 +30,9 @@ const MessageControls = () => (
   </Box>
 );
 
-const CssPaper = styled(Paper)<{ messageRole: MessageRoles }>(({ theme, messageRole }) => ({
+const CssPaper = styled(Paper, {
+  shouldForwardProp: (prop) => prop !== 'messageRole',
+})<{ messageRole: MessageRoles }>(({ theme, messageRole }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: '16px',
