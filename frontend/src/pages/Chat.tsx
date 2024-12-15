@@ -1,34 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Box, TextField, Typography, InputAdornment, styled } from '@mui/material';
 import TerraSvg from '../../images/TerraSvg';
-import SendActive from '../../images/SendActive'; // Adjust the import based on your file structure
-import MessageList from './MessageList';
+import SendActive from '../../images/SendActive';
+import MessageList from '../components/MessageList';
 import { Message } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import SendSvg from '../../images/Send';
+import { sendChatMessage } from '../services/api';
 
-const CssTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    background: theme.palette.mode === 'dark' ? '#292823' : '#FFF',
-    '& fieldset': {
-      border: `1px solid ${theme.palette.mode === 'dark' ? '#413F38' : '#D4D2CA'}`,
-    },
-    '&:hover fieldset': {
-      //todo: discuss madina regarding this behaviour
-    },
-    '&.Mui-focused': {
-      '& fieldset': {
-        border: `2px solid ${theme.palette.mode === 'dark' ? '#413F38' : '#D4D2CA'}`,
+const CssTextField = styled(TextField)(
+  ({
+    theme: {
+      palette: {
+        mode: themeMode,
+        common: { white: whiteColor },
       },
     },
-  },
+  }) => ({
+    '& .MuiOutlinedInput-root': {
+      background: themeMode === 'dark' ? '#292823' : whiteColor,
+      '& fieldset': {
+        border: `1px solid ${themeMode === 'dark' ? '#413F38' : '#D4D2CA'}`,
+      },
+      '&:hover fieldset': {
+        //todo: discuss madina regarding this behaviour
+      },
+      '&.Mui-focused': {
+        '& fieldset': {
+          border: `2px solid ${themeMode === 'dark' ? '#413F38' : '#D4D2CA'}`,
+        },
+      },
+    },
+  })
+);
+
+const DisclaimerText = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'visible',
+})<{ visible: boolean }>(({ theme, visible }) => ({
+  textAlign: 'center',
+  color: theme.palette.text.primary,
+  fontSize: '14px',
+  opacity: visible ? 1 : 0,
+  transform: `translateY(${visible ? 0 : '20px'})`,
+  transition: 'opacity 0.3s, transform 0.3s',
 }));
 
 export const Chat = () => {
-  const { isDarkMode } = useTheme(); // Get the current theme
+  const { isDarkMode } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) <= 1;
+      setIsAtBottom(isBottom);
+    }
+  };
+
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current;
+    if (chatContainer) {
+      chatContainer.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+    }
+
+    return () => {
+      if (chatContainer) {
+        chatContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  // Auto-scroll only for new messages
+  useEffect(() => {
+    if (chatContainerRef.current && messages.length > 0) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      setIsAtBottom(true);
+    }
+  }, [messages.length]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -44,15 +97,7 @@ export const Chat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question: input }),
-      });
-
-      const data = await response.json();
+      const data = await sendChatMessage(input);
       const assistantMessage: Message = {
         id: Date.now() + 1,
         content: data.response,
@@ -127,6 +172,7 @@ export const Chat = () => {
           }}
         >
           <Box
+            ref={chatContainerRef}
             sx={{
               flex: 1,
               overflowY: 'auto',
@@ -156,11 +202,18 @@ export const Chat = () => {
           right: 0,
           ...(messages.length > 1 || isLoading ? { bottom: 0 } : { top: '50%' }),
           p: 4,
+          pb: 2,
           zIndex: 1100,
         }}
       >
         <Box
-          sx={{ maxWidth: '800px', mx: 'auto', display: 'flex', gap: 1, justifyContent: 'center' }}
+          sx={{
+            maxWidth: '800px',
+            mx: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+          }}
         >
           <CssTextField
             fullWidth
@@ -174,6 +227,8 @@ export const Chat = () => {
             disabled={isLoading}
             sx={{
               maxWidth: '600px',
+              alignSelf: 'center',
+              width: '100%',
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
               },
@@ -204,6 +259,11 @@ export const Chat = () => {
               ),
             }}
           />
+          {messages.length > 0 && (
+            <DisclaimerText visible={isAtBottom}>
+              TerraChat can make mistakes. Please verify the important information.
+            </DisclaimerText>
+          )}
         </Box>
       </Box>
     </Box>

@@ -1,6 +1,6 @@
-// src/components/ModelAvatar.tsx
 import React from 'react';
-import { Box, Typography, Avatar } from '@mui/material';
+import { Box, Typography, Avatar, useTheme } from '@mui/material';
+import { useModelAvatar } from '../contexts/ModelAvatarContext';
 
 const MODEL_IMAGES = {
   'open-mistral-nemo': 'mistralai.png',
@@ -11,6 +11,15 @@ const MODEL_IMAGES = {
   'command-r-08-2024': 'cohere.png',
 } as const;
 
+const MODEL_DISPLAY_NAMES = {
+  'open-mistral-nemo': 'MistralAI',
+  'models/gemini-1.5-pro': 'Gemini AI Pro',
+  'models/gemini-1.5-flash': 'Gemini AI Flash',
+  'models/gemini-1.5-flash-8b': 'Gemini AI Flash 8B',
+  'command-r-plus-08-2024': 'Cohere+',
+  'command-r-08-2024': 'Cohere',
+} as const;
+
 const defaultModelImage = '/images/terra_ai.png';
 
 const getAssistantAvatar = (model?: string) => {
@@ -18,14 +27,22 @@ const getAssistantAvatar = (model?: string) => {
   return imagePath ? `/images/${imagePath}` : defaultModelImage;
 };
 
+const getDisplayName = (model?: string) => {
+  if (!model) return 'Terra AI';
+  return MODEL_DISPLAY_NAMES[model as keyof typeof MODEL_DISPLAY_NAMES] || model;
+};
+
 interface ModelAvatarProps {
-  source?: string; // Accept source prop
+  source?: string;
 }
 
 const ModelAvatar: React.FC<ModelAvatarProps> = ({ source }) => {
-  const avatarUrl = getAssistantAvatar(source);
-  const modelName = source || 'Unknown Model'; // Fallback if source is not provided
-  const originalModelName = source ? `(${source})` : ''; // Display original model name
+  const {
+    palette: { mode: themeMode },
+  } = useTheme();
+  const { showModelAvatars } = useModelAvatar();
+  const avatarUrl = showModelAvatars ? getAssistantAvatar(source) : defaultModelImage;
+  const displayName = getDisplayName(source);
 
   return (
     <Box
@@ -33,19 +50,43 @@ const ModelAvatar: React.FC<ModelAvatarProps> = ({ source }) => {
         display: 'flex',
         alignItems: 'center',
         gap: 1,
-        padding: 1,
-        borderRadius: 2,
+        padding: '4px 0',
       }}
     >
-      <Avatar src={avatarUrl} alt={modelName} sx={{ width: 36, height: 36 }} variant='square' />
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant='body1' sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-          {modelName}
-        </Typography>
-        <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-          {originalModelName}
-        </Typography>
-      </Box>
+      <Avatar
+        src={avatarUrl}
+        alt={displayName}
+        variant='square'
+        sx={{
+          width: 36,
+          height: 36,
+        }}
+      />
+      {showModelAvatars && (
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              color: 'text.primary',
+              lineHeight: '24px',
+            }}
+          >
+            {displayName}
+          </Typography>
+          {source && (
+            <Typography
+              sx={{
+                color: themeMode === 'dark' ? '#ABA99E' : '#4B483A',
+                fontSize: '14px',
+                lineHeight: '20px',
+                fontWeight: 400,
+              }}
+            >
+              ({source})
+            </Typography>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
