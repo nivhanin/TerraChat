@@ -4,6 +4,7 @@ import StatusBanner from './StatusBanner';
 import { useLocation } from 'react-router-dom';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
 import { CustomToggle } from './CustomToggle';
+import { ModelStatusIcons } from './ModelStatusIcons';
 
 export const Header = () => {
   const location = useLocation();
@@ -31,7 +32,8 @@ export const Header = () => {
           </Typography>
           <StatusBanner />
         </Box>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+          <ModelStatusIcons />
           {location.pathname === '/chat' && (
             <CustomToggle
               checked={showModelAvatars}

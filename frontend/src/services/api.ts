@@ -3,9 +3,10 @@ import { ModelSource } from '../types';
 export interface LLMValidationResponse {
   LANGCHAIN_API_KEY: boolean;
   HF_TOKEN: boolean;
-  COHERE_API_KEY: boolean;
-  GOOGLE_API_KEY: boolean;
+  COHERE_API_KEY?: boolean;
+  GOOGLE_API_KEY?: boolean;
   MISTRAL_API_KEY: boolean;
+  X_API_KEY?: boolean;
 }
 
 interface ChatResponse {

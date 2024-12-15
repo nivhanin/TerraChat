@@ -149,7 +149,8 @@ cohere_chain = prompt_template | llm_cohere | parser
 xai_chain = prompt_template | llm_xai | parser
 
 # Initialize chat history and LLM chains
-app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
+app.state.chat_history = [
+    {"role": "ai", "content": "How may I assist you today?"}]
 app.state.llm_chains = [
     # Order of chains is important
     RateLimiterLLMChain(
@@ -288,7 +289,8 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(result, app.state.llm_chains)
+        response = run_chains_with_function_result(
+            result, app.state.llm_chains)
         turn_count += 1
     return response
 
