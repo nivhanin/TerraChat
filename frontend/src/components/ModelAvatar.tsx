@@ -3,12 +3,34 @@ import { Box, Typography, Avatar, useTheme } from '@mui/material';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
 
 const MODEL_IMAGES = {
-  'open-mistral-nemo': 'mistralai.png',
-  'models/gemini-1.5-pro': 'gemini_pro.png',
-  'models/gemini-1.5-flash': 'gemini.png',
-  'models/gemini-1.5-flash-8b': 'gemini_8b.png',
-  'command-r-plus-08-2024': 'cohere_plus.png',
-  'command-r-08-2024': 'cohere.png',
+  'open-mistral-nemo': {
+    light: 'mistralai.png',
+    dark: 'mistralai.png',
+  },
+  'models/gemini-1.5-pro': {
+    light: 'gemini_pro.png',
+    dark: 'gemini_pro.png',
+  },
+  'models/gemini-1.5-flash': {
+    light: 'gemini.png',
+    dark: 'gemini.png',
+  },
+  'models/gemini-1.5-flash-8b': {
+    light: 'gemini_8b.png',
+    dark: 'gemini_8b.png',
+  },
+  'command-r-plus-08-2024': {
+    light: 'cohere_plus.png',
+    dark: 'cohere_plus.png',
+  },
+  'command-r-08-2024': {
+    light: 'cohere.png',
+    dark: 'cohere.png',
+  },
+  'grok-2-1212': {
+    light: 'xai_black.png',
+    dark: 'xai_light.png',
+  },
 } as const;
 
 const MODEL_DISPLAY_NAMES = {
@@ -18,13 +40,17 @@ const MODEL_DISPLAY_NAMES = {
   'models/gemini-1.5-flash-8b': 'Gemini AI Flash 8B',
   'command-r-plus-08-2024': 'Cohere+',
   'command-r-08-2024': 'Cohere',
+  'grok-2-1212': 'Grok AI',
 } as const;
 
-const defaultModelImage = '/images/terra_ai.png';
+const defaultModelImage = {
+  light: '/images/terra_ai.png',
+  dark: '/images/terra_ai.png',
+};
 
-const getAssistantAvatar = (model?: string) => {
-  const imagePath = MODEL_IMAGES[model as keyof typeof MODEL_IMAGES];
-  return imagePath ? `/images/${imagePath}` : defaultModelImage;
+const getAssistantAvatar = (model?: string, themeMode: 'light' | 'dark' = 'light') => {
+  const imageConfig = MODEL_IMAGES[model as keyof typeof MODEL_IMAGES];
+  return imageConfig ? `/images/${imageConfig[themeMode]}` : defaultModelImage[themeMode];
 };
 
 const getDisplayName = (model?: string) => {
@@ -41,7 +67,9 @@ const ModelAvatar: React.FC<ModelAvatarProps> = ({ source }) => {
     palette: { mode: themeMode },
   } = useTheme();
   const { showModelAvatars } = useModelAvatar();
-  const avatarUrl = showModelAvatars ? getAssistantAvatar(source) : defaultModelImage;
+  const avatarUrl = showModelAvatars
+    ? getAssistantAvatar(source, themeMode as 'light' | 'dark')
+    : defaultModelImage[themeMode as 'light' | 'dark'];
   const displayName = getDisplayName(source);
 
   return (

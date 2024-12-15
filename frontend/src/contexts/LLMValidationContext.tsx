@@ -38,7 +38,12 @@ export const LLMValidationProvider = ({ children }: { children: ReactNode }) => 
     };
   }, []);
 
-  const hasValidKey = Boolean(llmValidation && Object.values(llmValidation).some((value) => value));
+  const hasValidKey = Boolean(
+    llmValidation &&
+      llmValidation.LANGCHAIN_API_KEY &&
+      llmValidation.HF_TOKEN &&
+      llmValidation.MISTRAL_API_KEY
+  );
 
   return (
     <LLMValidationContext.Provider value={{ llmValidation, isLoading, hasValidKey }}>
