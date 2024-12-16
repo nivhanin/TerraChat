@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, Box, TextField, Typography, InputAdornment, styled } from '@mui/material';
+import {
+  Button,
+  Box,
+  TextField,
+  Typography,
+  InputAdornment,
+  styled,
+  useTheme as useMuiTheme,
+} from '@mui/material';
 import TerraSvg from '../../images/TerraSvg';
 import SendActive from '../../images/SendActive';
 import MessageList from '../components/MessageList';
@@ -21,9 +29,6 @@ const CssTextField = styled(TextField)(
       background: themeMode === 'dark' ? '#292823' : whiteColor,
       '& fieldset': {
         border: `1px solid ${themeMode === 'dark' ? '#413F38' : '#D4D2CA'}`,
-      },
-      '&:hover fieldset': {
-        //todo: discuss madina regarding this behaviour
       },
       '&.Mui-focused': {
         '& fieldset': {
@@ -47,6 +52,7 @@ const DisclaimerText = styled(Typography, {
 
 export const Chat = () => {
   const { isDarkMode } = useTheme();
+  const theme = useMuiTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -131,15 +137,13 @@ export const Chat = () => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: messages.length > 0 ? '100%' : 'auto',
       }}
     >
       {messages.length < 1 ? (
-        <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box sx={{ my: 4 }}>
           <Box
             sx={{
-              mt: 8,
-              mb: 6,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -169,6 +173,8 @@ export const Chat = () => {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
+            pt: 3,
+            px: 3,
           }}
         >
           <Box
@@ -176,8 +182,6 @@ export const Chat = () => {
             sx={{
               flex: 1,
               overflowY: 'auto',
-              p: 2,
-              pb: '100px',
               '&::-webkit-scrollbar': {
                 width: '8px',
               },
@@ -197,12 +201,18 @@ export const Chat = () => {
 
       <Box
         sx={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          ...(messages.length > 1 || isLoading ? { bottom: 0 } : { top: '50%' }),
-          p: 4,
-          pb: 2,
+          // position: 'absolute',
+          // left: 0,
+          // right: 0,
+          // ...(messages.length > 1 || isLoading ? { bottom: 0 } : { top: '50%' }),
+          // p: 4,
+          // pb: 2,
+          ...(messages.length > 0 && {
+            position: 'sticky',
+            bottom: 0,
+            background: theme.palette.background.default,
+            pb: 3,
+          }),
           zIndex: 1100,
         }}
       >
