@@ -1,5 +1,4 @@
 import { Box, Typography, Button } from '@mui/material';
-import { ThemeToggle } from './ThemeToggle';
 import StatusBanner from './StatusBanner';
 import { useLocation } from 'react-router-dom';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
@@ -57,7 +56,6 @@ export const Header = () => {
           >
             Documentation
           </Button>
-          <ThemeToggle />
         </Box>
       </Box>
     </Box>
