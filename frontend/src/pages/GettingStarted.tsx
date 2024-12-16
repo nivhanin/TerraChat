@@ -89,8 +89,8 @@ export const GettingStarted = () => {
                     sx={{
                       fontSize: 32,
                       color: llmValidation[key as keyof typeof llmValidation]
-                        ? '#56A427'
-                        : '#D42222',
+                        ? 'success.main'
+                        : 'error.main',
                     }}
                   />
                 </Box>

@@ -26,6 +26,10 @@ const CssTextField = styled(TextField)(
     },
   }) => ({
     '& .MuiOutlinedInput-root': {
+      borderRadius: '100px',
+      maxWidth: '600px',
+      alignSelf: 'center',
+      width: '100%',
       background: themeMode === 'dark' ? '#292823' : whiteColor,
       '& fieldset': {
         border: `1px solid ${themeMode === 'dark' ? '#413F38' : '#D4D2CA'}`,
@@ -201,12 +205,6 @@ export const Chat = () => {
 
       <Box
         sx={{
-          // position: 'absolute',
-          // left: 0,
-          // right: 0,
-          // ...(messages.length > 1 || isLoading ? { bottom: 0 } : { top: '50%' }),
-          // p: 4,
-          // pb: 2,
           ...(messages.length > 0 && {
             position: 'sticky',
             bottom: 0,
@@ -235,14 +233,6 @@ export const Chat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={isLoading}
-            sx={{
-              maxWidth: '600px',
-              alignSelf: 'center',
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-              },
-            }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position='start'>
