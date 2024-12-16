@@ -30,10 +30,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         primary: isDarkMode ? '#F5F4F0' : '#28261C',
         secondary: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       },
+      error: {
+        main: '#D42222',
+      },
+      success: {
+        main: '#56A427',
+      },
       divider: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    },
-    shape: {
-      borderRadius: 33.3,
     },
     components: {
       MuiPaper: {

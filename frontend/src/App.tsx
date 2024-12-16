@@ -1,17 +1,18 @@
-import { Box } from '@mui/material';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ModelAvatarProvider } from './contexts/ModelAvatarContext';
 import { LLMValidationProvider, useLLMValidation } from './contexts/LLMValidationContext';
+import { Layout } from './components/Layout';
 import { Chat } from './pages/Chat';
-import { Header } from './components/Header';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { NotFound } from './pages/NotFound';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { GettingStarted } from './pages/GettingStarted';
 
 const AppRoutes = () => {
   const { isLoading, hasValidKey } = useLLMValidation();
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (
@@ -30,45 +31,26 @@ const AppRoutes = () => {
         path='/chat'
         element={hasValidKey ? <Chat /> : <Navigate to='/getting-started' replace />}
       />
+      <Route path='*' element={<NotFound />} />
     </Routes>
   );
 };
 
 function App() {
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
       <ThemeProvider>
         <LLMValidationProvider>
           <ModelAvatarProvider>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100vh',
-                bgcolor: 'background.default',
-              }}
-            >
-              <Header />
-              <Box sx={{ display: 'flex', flex: 1, position: 'relative' }}>
-                <Box
-                  component='main'
-                  sx={{
-                    flex: 1,
-                    transition: (theme) =>
-                      theme.transitions.create('margin', {
-                        easing: theme.transitions.easing.sharp,
-                        duration: theme.transitions.duration.enteringScreen,
-                      }),
-                  }}
-                >
-                  <AppRoutes />
-                </Box>
-              </Box>
-            </Box>
+            <BrowserRouter>
+              <Layout>
+                <AppRoutes />
+              </Layout>
+            </BrowserRouter>
           </ModelAvatarProvider>
         </LLMValidationProvider>
       </ThemeProvider>
-    </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

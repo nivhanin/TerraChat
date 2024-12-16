@@ -119,7 +119,6 @@ const ModelIcon = ({ name, image, isConfigured }: ModelIconProps) => {
 export const ModelStatusIcons = () => {
   const { llmValidation } = useLLMValidation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const theme = useTheme();
 
   if (!llmValidation) return null;
 

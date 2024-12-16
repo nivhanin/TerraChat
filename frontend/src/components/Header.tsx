@@ -1,14 +1,20 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import { ThemeToggle } from './ThemeToggle';
 import StatusBanner from './StatusBanner';
 import { useLocation } from 'react-router-dom';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
 import { CustomToggle } from './CustomToggle';
 import { ModelStatusIcons } from './ModelStatusIcons';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 
 export const Header = () => {
   const location = useLocation();
   const { showModelAvatars, toggleModelAvatars } = useModelAvatar();
+
+  const handleDocClick = () => {
+    // TODO: Add documentation link when ready
+    // window.open('/documentation', '_blank');
+  };
 
   return (
     <Box sx={{ position: 'sticky', top: 0, zIndex: 1200 }}>
@@ -41,6 +47,16 @@ export const Header = () => {
               label='Show Sources'
             />
           )}
+          <Button
+            onClick={handleDocClick}
+            startIcon={<ArticleOutlinedIcon />}
+            sx={{
+              color: 'text.primary',
+              textTransform: 'none',
+            }}
+          >
+            Documentation
+          </Button>
           <ThemeToggle />
         </Box>
       </Box>
