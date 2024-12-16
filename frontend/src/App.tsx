@@ -8,7 +8,7 @@ import { NotFound } from './pages/NotFound';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GettingStarted } from './pages/GettingStarted';
 
-const AppRoutes = () => {
+function AppRoutes() {
   const { isLoading, hasValidKey } = useLLMValidation();
 
   if (isLoading) {
@@ -34,9 +34,9 @@ const AppRoutes = () => {
       <Route path='*' element={<NotFound />} />
     </Routes>
   );
-};
+}
 
-function App() {
+export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -53,5 +53,3 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-export default App;
