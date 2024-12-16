@@ -11,7 +11,7 @@ export const Header = () => {
   const { showModelAvatars, toggleModelAvatars } = useModelAvatar();
 
   return (
-    <Box>
+    <Box sx={{ position: 'sticky', top: 0, zIndex: 1200 }}>
       <Box
         sx={{
           height: '64px',

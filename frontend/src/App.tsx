@@ -59,8 +59,6 @@ function App() {
                         easing: theme.transitions.easing.sharp,
                         duration: theme.transitions.duration.enteringScreen,
                       }),
-                    height: 'calc(100vh - 64px)',
-                    overflow: 'hidden',
                   }}
                 >
                   <AppRoutes />

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider as MUIThemeProvider, Theme, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 type ThemeContextType = {
@@ -16,7 +16,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setIsDarkMode(!isDarkMode);
   };
 
-  const theme = createTheme({
+  const theme: Theme = createTheme({
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
       background: {
@@ -40,6 +40,52 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
+          },
+        },
+      },
+      MuiList: {
+        styleOverrides: {
+          root: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            padding: '24px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: isDarkMode ? '#292823' : '#FFF',
+            borderRadius: '16px',
+            border: `1px solid ${isDarkMode ? '#413F38' : '#D4D2CA'}`,
+          },
+        },
+      },
+      MuiListItemIcon: {
+        styleOverrides: {
+          root: {
+            minWidth: '32px',
+          },
+        },
+      },
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '24px',
+            alignSelf: 'stretch',
+          },
+        },
+      },
+      MuiListItemText: {
+        styleOverrides: {
+          root: {
+            margin: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            gap: '4px',
+            flex: '1 0 0',
           },
         },
       },

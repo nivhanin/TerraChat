@@ -25,7 +25,7 @@ const LoadingDots = () => (
           width: 6,
           height: 6,
           borderRadius: '50%',
-          bgcolor: 'text.secondary',
+          bgcolor: 'primary.main',
           animation: `${loadingAnimation} 1s infinite`,
           animationDelay: `${i * 0.2}s`,
         }}

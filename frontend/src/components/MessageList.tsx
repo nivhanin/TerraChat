@@ -30,7 +30,7 @@ const MessageControls = () => (
   </Box>
 );
 
-const CssPaper = styled(Paper, {
+const StyledPaper = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'messageRole',
 })<{ messageRole: MessageRoles }>(({ theme, messageRole }) => ({
   display: 'flex',
@@ -61,7 +61,7 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '800px', mx: 'auto' }}>
       {messages.map((message) => (
-        <CssPaper messageRole={message.role} key={message.id} elevation={0}>
+        <StyledPaper messageRole={message.role} key={message.id} elevation={0}>
           {message.role === 'assistant' && (
             <ModelAvatar source={message.source} /> // Use the source prop
           )}
@@ -83,7 +83,7 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
               </Box>
             )}
           </Box>
-        </CssPaper>
+        </StyledPaper>
       ))}
       {isLoading && (
         <Box sx={{ display: 'flex', gap: 3, px: 4, alignItems: 'center' }}>
