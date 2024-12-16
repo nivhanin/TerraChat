@@ -11,8 +11,9 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_cohere import ChatCohere
-from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_xai import ChatXAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
@@ -36,57 +37,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-terra_ai_logo = "images/terra_ai.png"
-
 
 # Define a model for incoming requests
 class UserInput(BaseModel):
     question: str
 
 
-# Available actions are:
-available_actions = {"get_weather": get_weather}
-available_tools = [
-    get_weather,
-]
-
-# Create LLM instance using Langchain
-llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
-llm_gemini_ai_instance_pro = ChatGoogleGenerativeAI(
-    model="models/gemini-1.5-pro",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-    # other params...
-)
-llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
-    model="models/gemini-1.5-flash",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-    # other params...
-)
-llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
-    model="models/gemini-1.5-flash-8b",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-    # other params...
-)
-llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
-llm_cohere = ChatCohere(model="command-r-08-2024")
-llm_xai = ChatXAI(model="grok-2-1212")
-
-
-# Initialize components for dynamic message retrieval - Memory feature
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
-)
-mistral_embeddings = MistralAIEmbeddings()
-vectorstore = InMemoryVectorStore(mistral_embeddings)
+def is_env_var_set(env_var):
+    return os.getenv(env_var) is not None
 
 
 @retry(
@@ -111,6 +69,56 @@ def add_message_to_history(message_type: str, message: str, source: str = ""):
     _add_texts_to_vectorstore(splits)
 
     time.sleep(2)
+
+
+# Available actions are:
+available_actions = {"get_weather": get_weather}
+available_tools = [get_weather]
+
+# Create LLM instance using Langchain
+llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
+if is_env_var_set("GOOGLE_API_KEY"):
+    llm_gemini_ai_instance_pro = ChatGoogleGenerativeAI(
+        model="models/gemini-1.5-pro",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # other params...
+    )
+    llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
+        model="models/gemini-1.5-flash",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # other params...
+    )
+    llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
+        model="models/gemini-1.5-flash-8b",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # other params...
+    )
+if is_env_var_set("COHERE_API_KEY"):
+    llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
+    llm_cohere = ChatCohere(model="command-r-08-2024")
+if is_env_var_set("XAI_API_KEY"):
+    llm_xai = ChatXAI(model="grok-2-1212")
+if is_env_var_set("OPENAI_API_KEY"):
+    llm_openai_1 = ChatOpenAI(model="o1-mini")
+    llm_openai_4 = ChatOpenAI(model="gpt-4o-mini")
+    llm_openai_3 = ChatOpenAI(model="gpt-3.5-turbo")
+
+
+# Initialize components for dynamic message retrieval - Memory feature
+text_splitter = RecursiveCharacterTextSplitter(
+    separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
+)
+mistral_embeddings = MistralAIEmbeddings()
+vectorstore = InMemoryVectorStore(mistral_embeddings)
 
 
 # Set up the prompt template
@@ -140,55 +148,103 @@ history_aware_retriever = create_history_aware_retriever(
 parser = StrOutputParser()
 
 # Setup chains - Create LLM chain
-mistral_chain = prompt_template | llm_instance_mistral | parser
-gemini_ai_pro_chain = prompt_template | llm_gemini_ai_instance_pro | parser
-gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
-gemini_ai_flash_8b_chain = prompt_template | llm_gemini_ai_instance_flash_8b | parser
-cohere_plus_chain = prompt_template | llm_cohere_plus | parser
+if is_env_var_set("MISTRAL_API_KEY"):
+    mistral_chain = prompt_template | llm_instance_mistral | parser
+if is_env_var_set("GOOGLE_API_KEY"):
+    gemini_ai_pro_chain = prompt_template | llm_gemini_ai_instance_pro | parser
+    gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
+    gemini_ai_flash_8b_chain = (
+        prompt_template | llm_gemini_ai_instance_flash_8b | parser
+    )
+if is_env_var_set("COHERE_API_KEY"):
+    cohere_plus_chain = prompt_template | llm_cohere_plus | parser
 cohere_chain = prompt_template | llm_cohere | parser
-xai_chain = prompt_template | llm_xai | parser
+if is_env_var_set("XAI_API_KEY"):
+    xai_chain = prompt_template | llm_xai | parser
+if is_env_var_set("OPENAI_API_KEY"):
+    openai_1_chain = prompt_template | llm_openai_1 | parser
+    openai_4_chain = prompt_template | llm_openai_4 | parser
+    openai_3_chain = prompt_template | llm_openai_3 | parser
 
 # Initialize chat history and LLM chains
-app.state.chat_history = [
-    {"role": "ai", "content": "How may I assist you today?"}]
-app.state.llm_chains = [
-    # Order of chains is important
-    RateLimiterLLMChain(
-        llm_chain=gemini_ai_pro_chain,
-        max_requests_per_minute=1,  # 2
-        max_requests_per_day=1,  # 50
-    ),
-    RateLimiterLLMChain(
-        llm_chain=xai_chain,
-        max_requests_per_minute=1,  # 60 RPM 1200 RPH -> 20 RPM
-        max_requests_per_day=1,  # infinite
-    ),
-    RateLimiterLLMChain(
-        llm_chain=gemini_ai_flash_chain,
-        max_requests_per_minute=1,  # 15
-        max_requests_per_day=1,  # 1500
-    ),
-    RateLimiterLLMChain(
-        llm_chain=gemini_ai_flash_8b_chain,
-        max_requests_per_minute=1,  # 15
-        max_requests_per_day=1,  # 1500
-    ),
-    RateLimiterLLMChain(
-        llm_chain=cohere_plus_chain,
-        max_requests_per_minute=1,  # 20
-        max_requests_per_day=1,  # 1000 per month (approx 32 per day)
-    ),
-    RateLimiterLLMChain(
-        llm_chain=cohere_chain,
-        max_requests_per_minute=1,  # 20
-        max_requests_per_day=1,  # 1000 per month (approx 32 per day)
-    ),
-    RateLimiterLLMChain(
-        llm_chain=mistral_chain,
-        max_requests_per_minute=4,  # 30
-        max_requests_per_day=1,  # infinite
-    ),
-]
+app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
+app.state.llm_chains = []
+# Add LLM chains to the list if the API keys are set, Order of chains is important!
+if is_env_var_set("OPENAI_API_KEY"):
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=openai_1_chain,
+            max_requests_per_minute=3,  # 3
+            max_requests_per_day=3,  # 200
+        )
+    )
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=openai_3_chain,
+            max_requests_per_minute=3,  # 3
+            max_requests_per_day=3,  # 200
+        )
+    )
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=openai_4_chain,
+            max_requests_per_minute=3,  # 3
+            max_requests_per_day=100,  # 200
+        )
+    )
+if is_env_var_set("GOOGLE_API_KEY"):
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=gemini_ai_flash_chain,
+            max_requests_per_minute=1,  # 15
+            max_requests_per_day=1,  # 1500
+        )
+    )
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=gemini_ai_pro_chain,
+            max_requests_per_minute=1,  # 2
+            max_requests_per_day=1,  # 50
+        )
+    )
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=gemini_ai_flash_8b_chain,
+            max_requests_per_minute=1,  # 15
+            max_requests_per_day=1,  # 1500
+        )
+    )
+if is_env_var_set("COHERE_API_KEY"):
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=cohere_plus_chain,
+            max_requests_per_minute=1,  # 20
+            max_requests_per_day=1,  # 1000 per month (approx 32 per day)
+        )
+    )
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=cohere_chain,
+            max_requests_per_minute=1,  # 20
+            max_requests_per_day=1,  # 1000 per month (approx 32 per day)
+        )
+    )
+if is_env_var_set("XAI_API_KEY"):
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=xai_chain,
+            max_requests_per_minute=1,  # 60 RPM 1200 RPH -> 20 RPM
+            max_requests_per_day=1,  # infinite
+        )
+    )
+if is_env_var_set("MISTRAL_API_KEY"):
+    app.state.llm_chains.append(
+        RateLimiterLLMChain(
+            llm_chain=mistral_chain,
+            max_requests_per_minute=4,  # 30
+            max_requests_per_day=1,  # infinite
+        )
+    )
 
 
 @app.get("/llms")
@@ -201,6 +257,7 @@ async def llms():
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
         "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") is not None,
         "XAI_API_KEY": os.getenv("XAI_API_KEY") is not None,
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY") is not None,
     }
 
 
@@ -223,15 +280,8 @@ async def ask_question(user_input: UserInput):
         answer_data = response
         log.error("No 'Answer:' prefix found or no answer data after it!")
 
-    add_message_to_history(
-        "ai",
-        answer_data,
-        source=model_name,
-    )
-    return {
-        "response": answer_data,
-        "source": model_name,
-    }
+    add_message_to_history("ai", answer_data, source=model_name)
+    return {"response": answer_data, "source": model_name}
 
 
 def handle_user_input(user_question: str):
@@ -289,8 +339,7 @@ def process_response(response):
 
         log.info(f" -- running {function_name} {function_params}")
         result = available_actions[function_name](**function_params)
-        response = run_chains_with_function_result(
-            result, app.state.llm_chains)
+        response = run_chains_with_function_result(result, app.state.llm_chains)
         turn_count += 1
     return response
 
