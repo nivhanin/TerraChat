@@ -72,7 +72,7 @@ export const GettingStarted = () => {
           gap: 3,
         }}
       >
-        <List>
+        <List sx={{ p: 3 }}>
           {apiKeys.map(({ name, key }) => (
             <ListItem key={key}>
               <ListItemIcon>

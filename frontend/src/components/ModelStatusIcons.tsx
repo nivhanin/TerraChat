@@ -181,9 +181,12 @@ export const ModelStatusIcons = () => {
         slotProps={{
           paper: {
             sx: {
-              mt: 1,
+              borderRadius: '16px',
               minWidth: 280,
-              bgcolor: theme.palette.background.paper,
+              '& .MuiList-root': {
+                paddingTop: 0,
+                paddingBottom: 0,
+              },
             },
           },
         }}

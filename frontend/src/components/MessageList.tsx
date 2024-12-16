@@ -38,7 +38,12 @@ const StyledPaper = styled(Paper, {
   padding: '16px',
   gap: '16px',
   ...(messageRole === 'assistant' && { flexDirection: 'column', alignItems: 'flex-start' }),
-  ...(messageRole === 'user' && { alignSelf: 'flex-end', width: '75%', borderRadius: '10px' }),
+  ...(messageRole === 'user' && {
+    alignSelf: 'flex-end',
+    width: 'auto',
+    maxWidth: '75%',
+    borderRadius: '10px',
+  }),
   backgroundColor:
     messageRole === 'assistant'
       ? 'transparent'
