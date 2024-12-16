@@ -1,7 +1,6 @@
-import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
-const StatusBanner: React.FC = () => {
+export default function StatusBanner() {
   const {
     palette: {
       mode: themeMode,
@@ -22,6 +21,4 @@ const StatusBanner: React.FC = () => {
       <Typography variant='body2'>Rate-limit free AI chat bot</Typography>
     </Box>
   );
-};
-
-export default StatusBanner;
+}
