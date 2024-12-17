@@ -5,8 +5,8 @@ import { LLMValidationProvider, useLLMValidation } from './contexts/LLMValidatio
 import { Layout } from './components/Layout';
 import { Chat } from './pages/Chat';
 import { NotFound } from './pages/NotFound';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import { GettingStarted } from './pages/GettingStarted';
+import { Documentation } from './pages/Documentation';
 
 function AppRoutes() {
   const { isLoading, hasValidKey } = useLLMValidation();
@@ -31,6 +31,7 @@ function AppRoutes() {
         path='/chat'
         element={hasValidKey ? <Chat /> : <Navigate to='/getting-started' replace />}
       />
+      <Route path='/documentation' element={<Documentation />} />
       <Route path='*' element={<NotFound />} />
     </Routes>
   );
@@ -38,18 +39,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <LLMValidationProvider>
-          <ModelAvatarProvider>
-            <BrowserRouter>
-              <Layout>
-                <AppRoutes />
-              </Layout>
-            </BrowserRouter>
-          </ModelAvatarProvider>
-        </LLMValidationProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <LLMValidationProvider>
+        <ModelAvatarProvider>
+          <BrowserRouter>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </BrowserRouter>
+        </ModelAvatarProvider>
+      </LLMValidationProvider>
+    </ThemeProvider>
   );
 }

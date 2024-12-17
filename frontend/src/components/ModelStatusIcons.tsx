@@ -7,7 +7,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 
-const REQUIRED_MODELS = [
+// eslint-disable-next-line react-refresh/only-export-components
+export const REQUIRED_MODELS = [
   {
     name: 'Mistral AI',
     key: 'MISTRAL_API_KEY',
@@ -35,7 +36,8 @@ const REQUIRED_MODELS = [
   },
 ];
 
-const OPTIONAL_MODELS = [
+// eslint-disable-next-line react-refresh/only-export-components
+export const OPTIONAL_MODELS = [
   {
     name: 'Gemini',
     key: 'GOOGLE_API_KEY',

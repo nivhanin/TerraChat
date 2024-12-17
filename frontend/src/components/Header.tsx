@@ -1,6 +1,6 @@
 import { Box, Typography, Button } from '@mui/material';
 import StatusBanner from './StatusBanner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
 import { CustomToggle } from './CustomToggle';
 import { ModelStatusIcons } from './ModelStatusIcons';
@@ -8,11 +8,11 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 
 export const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { showModelAvatars, toggleModelAvatars } = useModelAvatar();
 
   const handleDocClick = () => {
-    // TODO: Add documentation link when ready
-    // window.open('/documentation', '_blank');
+    navigate('/documentation');
   };
 
   return (
