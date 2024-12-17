@@ -14,7 +14,7 @@ pnpm install
 
 2. Start the python server:
 ```bash
-python server.py
+poetry run python server.py
 ```
 
 3. Start the frontend server:
