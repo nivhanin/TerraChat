@@ -80,6 +80,7 @@ class RateLimiterLLMChain:
             )
             time.sleep(wait_time)
 
+        log.info(f"Invoking model {self.model_name}... user_prompt={user_prompt}")
         try:
             response = self.llm_chain.invoke(input=user_prompt)
             self.record_request()
