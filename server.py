@@ -158,7 +158,7 @@ if is_env_var_set("GOOGLE_API_KEY"):
     )
 if is_env_var_set("COHERE_API_KEY"):
     cohere_plus_chain = prompt_template | llm_cohere_plus | parser
-cohere_chain = prompt_template | llm_cohere | parser
+    cohere_chain = prompt_template | llm_cohere | parser
 if is_env_var_set("XAI_API_KEY"):
     xai_chain = prompt_template | llm_xai | parser
 if is_env_var_set("OPENAI_API_KEY"):
