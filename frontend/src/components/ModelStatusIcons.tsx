@@ -62,6 +62,14 @@ export const OPTIONAL_MODELS = [
       dark: '/images/xai_light.png',
     },
   },
+  {
+    name: 'OpenAI',
+    key: 'OPENAI_API_KEY',
+    image: {
+      light: '/images/openai_black.png',
+      dark: '/images/openai_light.png',
+    },
+  },
 ];
 
 interface ModelIconProps {

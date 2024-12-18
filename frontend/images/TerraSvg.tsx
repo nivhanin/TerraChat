@@ -1,8 +1,10 @@
+import { SxProps } from '@mui/material';
+import { Theme } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 
-export default function TerraSvg() {
+export default function TerraSvg({ additionalStyles }: { additionalStyles?: SxProps<Theme> }) {
   return (
-    <SvgIcon sx={{ fontSize: '279px' }}>
+    <SvgIcon sx={{ fontSize: '279px', ...additionalStyles }}>
       {/* credit: cog icon from https://heroicons.com */}
       <svg
         width='279'
