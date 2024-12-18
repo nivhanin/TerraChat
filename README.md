@@ -6,7 +6,9 @@
 </div>
 
 
-TerraChat is an innovative open-source API designed to revolutionize the developer experience by providing seamless access to multiple leading Large Language Models (LLMs) without any rate limitations. Our goal is to utilize free tokens from various vendors to offer a cost-effective and versatile chat solution.
+TerraChat is an innovative open-source API designed to revolutionize the developer experience by providing seamless access to multiple leading Large Language Models (LLMs) without any rate limitations. 
+
+Our goal is to utilize free tokens from various vendors to offer a cost-effective and versatile chat and API solution.
 
 ## Key Features
 
@@ -20,11 +22,6 @@ TerraChat is an innovative open-source API designed to revolutionize the develop
   
 - **Smart Switching**: Utilize our sophisticated LLM switch algorithm to optimize performance and flexibility, adapting to the best available model as per your needs.
 
-## Architecture
-
-- **Backend Development**: Built using a robust Python server with FastAPI and LangChain to ensure scalable and efficient API management.
-  
-- **Frontend Development**: Developed with React and Material-UI to provide a responsive and dynamic user interface.
 
 ## Setup
 
