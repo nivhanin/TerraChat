@@ -12,6 +12,8 @@ langchain-mistralai = "^0.2.1"
 langchain-google-genai = "^2.0.4"
 langchain-xai = "^0.1.0"
 langchain-openai = "^0.2.12"
+uvicorn = {version = "0.34.0", extras = ["standard"]}
+fastapi = "^0.115.6"
 
 
 [build-system]
