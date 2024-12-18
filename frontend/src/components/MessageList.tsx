@@ -79,9 +79,7 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
               flexDirection: message.role === 'user' ? 'row-reverse' : 'column',
             }}
           >
-            <Typography variant='body1' sx={{ whiteSpace: 'pre-wrap' }}>
-              {message.content}
-            </Typography>
+            <Typography variant='body1'>{message.content}</Typography>
             {message.role === 'assistant' && (
               <Box
                 className='message-controls'

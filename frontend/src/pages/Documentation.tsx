@@ -136,10 +136,10 @@ export const Documentation = () => {
         gap: 4,
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-        <TerraSvg />
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <TerraSvg additionalStyles={{ alignSelf: 'center' }} />
         <Box>
-          <Typography variant='h4' sx={{ mb: 2, fontWeight: 600, letterSpacing: '0.72px' }}>
+          <Typography variant='h4' sx={{ mb: 2, fontWeight: 600 }}>
             TerraChat Documentation
           </Typography>
           <Typography variant='body1' color='text.secondary'>
