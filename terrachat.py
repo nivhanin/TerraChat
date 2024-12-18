@@ -1,3 +1,6 @@
+# Streamlit app for TerraChat: Depreciated !!!
+
+
 import re
 import time
 
@@ -13,7 +16,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from helpers.json_helpers import extract_json_from_text
+from utils.json_helpers import extract_json_from_text
 from prompts import react_system_prompt, contextualize_q_system_prompt
 from rate_limiter import RateLimiterLLMChain
 from tools import get_weather
