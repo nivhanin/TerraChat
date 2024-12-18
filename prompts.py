@@ -1,3 +1,5 @@
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 react_system_prompt = """
   You are Personal Assistant Chatbot, answer shortly and concisely to the user's 
   questions.
@@ -60,4 +62,21 @@ contextualize_q_system_prompt = (
     "formulate a standalone question which can be understood "
     "without the chat history. Do NOT answer the question, "
     "just reformulate it if needed and otherwise return it as is."
+)
+
+# Set up the prompt template
+prompt_template = ChatPromptTemplate.from_messages(
+    [
+        ("system", react_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("ai", "Welcome to the TerraChat, how can I help you?"),
+        ("human", "{input}"),
+    ]
+)
+contextualize_q_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", contextualize_q_system_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
 )

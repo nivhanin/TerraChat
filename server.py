@@ -1,4 +1,3 @@
-import os
 import re
 import time
 import uvicorn
@@ -6,21 +5,16 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.chains import create_history_aware_retriever
-from langchain.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_cohere import ChatCohere
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
-from langchain_openai import ChatOpenAI
-from langchain_xai import ChatXAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from helpers.json_helpers import extract_json_from_text
-from prompts import react_system_prompt, contextualize_q_system_prompt
+from embeddings.mistral import mistral_embeddings
+from llms.mistral import llm_instance_mistral
+from utils.helpers import is_env_var_set
+from utils.json_helpers import extract_json_from_text
+from prompts import contextualize_q_prompt
 from rate_limiter import RateLimiterLLMChain
 from tools import get_weather
 from utils.logger import log
@@ -41,10 +35,6 @@ app.add_middleware(
 # Define a model for incoming requests
 class UserInput(BaseModel):
     question: str
-
-
-def is_env_var_set(env_var):
-    return os.getenv(env_var) is not None
 
 
 @retry(
@@ -75,102 +65,27 @@ def add_message_to_history(message_type: str, message: str, source: str = ""):
 available_actions = {"get_weather": get_weather}
 available_tools = [get_weather]
 
-# Create LLM instance using Langchain
-llm_instance_mistral = ChatMistralAI(model_name="open-mistral-nemo")
-if is_env_var_set("GOOGLE_API_KEY"):
-    llm_gemini_ai_instance_pro = ChatGoogleGenerativeAI(
-        model="models/gemini-1.5-pro",
-        temperature=0,
-        max_tokens=None,
-        timeout=None,
-        max_retries=2,
-        # other params...
-    )
-    llm_gemini_ai_instance_flash = ChatGoogleGenerativeAI(
-        model="models/gemini-1.5-flash",
-        temperature=0,
-        max_tokens=None,
-        timeout=None,
-        max_retries=2,
-        # other params...
-    )
-    llm_gemini_ai_instance_flash_8b = ChatGoogleGenerativeAI(
-        model="models/gemini-1.5-flash-8b",
-        temperature=0,
-        max_tokens=None,
-        timeout=None,
-        max_retries=2,
-        # other params...
-    )
-if is_env_var_set("COHERE_API_KEY"):
-    llm_cohere_plus = ChatCohere(model="command-r-plus-08-2024")
-    llm_cohere = ChatCohere(model="command-r-08-2024")
-if is_env_var_set("XAI_API_KEY"):
-    llm_xai = ChatXAI(model="grok-2-1212")
-if is_env_var_set("OPENAI_API_KEY"):
-    llm_openai_1 = ChatOpenAI(model="o1-mini")
-    llm_openai_4 = ChatOpenAI(model="gpt-4o-mini")
-    llm_openai_3 = ChatOpenAI(model="gpt-3.5-turbo")
-
-
 # Initialize components for dynamic message retrieval - Memory feature
 text_splitter = RecursiveCharacterTextSplitter(
     separators=["\n"], chunk_size=1000, chunk_overlap=200, length_function=len
 )
-mistral_embeddings = MistralAIEmbeddings()
 vectorstore = InMemoryVectorStore(mistral_embeddings)
 
 
-# Set up the prompt template
-prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", react_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("ai", "Welcome to the TerraChat, how can I help you?"),
-        ("human", "{input}"),
-    ]
-)
-
 # Set up the retriever - Memory feature
-contextualize_q_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", contextualize_q_system_prompt),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ]
-)
 retriever = vectorstore.as_retriever()
 history_aware_retriever = create_history_aware_retriever(
     llm_instance_mistral, retriever, contextualize_q_prompt
 )
 
-# Define a simple StrOutputParser instance
-parser = StrOutputParser()
-
-# Setup chains - Create LLM chain
-if is_env_var_set("MISTRAL_API_KEY"):
-    mistral_chain = prompt_template | llm_instance_mistral | parser
-if is_env_var_set("GOOGLE_API_KEY"):
-    gemini_ai_pro_chain = prompt_template | llm_gemini_ai_instance_pro | parser
-    gemini_ai_flash_chain = prompt_template | llm_gemini_ai_instance_flash | parser
-    gemini_ai_flash_8b_chain = (
-        prompt_template | llm_gemini_ai_instance_flash_8b | parser
-    )
-if is_env_var_set("COHERE_API_KEY"):
-    cohere_plus_chain = prompt_template | llm_cohere_plus | parser
-    cohere_chain = prompt_template | llm_cohere | parser
-if is_env_var_set("XAI_API_KEY"):
-    xai_chain = prompt_template | llm_xai | parser
-if is_env_var_set("OPENAI_API_KEY"):
-    openai_1_chain = prompt_template | llm_openai_1 | parser
-    openai_4_chain = prompt_template | llm_openai_4 | parser
-    openai_3_chain = prompt_template | llm_openai_3 | parser
 
 # Initialize chat history and LLM chains
 app.state.chat_history = [{"role": "ai", "content": "How may I assist you today?"}]
 app.state.llm_chains = []
 # Add LLM chains to the list if the API keys are set, Order of chains is important!
 if is_env_var_set("OPENAI_API_KEY"):
+    from llms.openai import openai_1_chain, openai_3_chain, openai_4_chain
+
     app.state.llm_chains.append(
         RateLimiterLLMChain(
             llm_chain=openai_1_chain,
@@ -193,6 +108,12 @@ if is_env_var_set("OPENAI_API_KEY"):
         )
     )
 if is_env_var_set("GOOGLE_API_KEY"):
+    from llms.google import (
+        gemini_ai_flash_chain,
+        gemini_ai_pro_chain,
+        gemini_ai_flash_8b_chain,
+    )
+
     app.state.llm_chains.append(
         RateLimiterLLMChain(
             llm_chain=gemini_ai_flash_chain,
@@ -215,6 +136,8 @@ if is_env_var_set("GOOGLE_API_KEY"):
         )
     )
 if is_env_var_set("COHERE_API_KEY"):
+    from llms.cohere import cohere_chain, cohere_plus_chain
+
     app.state.llm_chains.append(
         RateLimiterLLMChain(
             llm_chain=cohere_plus_chain,
@@ -230,6 +153,8 @@ if is_env_var_set("COHERE_API_KEY"):
         )
     )
 if is_env_var_set("XAI_API_KEY"):
+    from llms.xai import xai_chain
+
     app.state.llm_chains.append(
         RateLimiterLLMChain(
             llm_chain=xai_chain,
@@ -238,6 +163,8 @@ if is_env_var_set("XAI_API_KEY"):
         )
     )
 if is_env_var_set("MISTRAL_API_KEY"):
+    from llms.mistral import mistral_chain
+
     app.state.llm_chains.append(
         RateLimiterLLMChain(
             llm_chain=mistral_chain,
@@ -251,13 +178,13 @@ if is_env_var_set("MISTRAL_API_KEY"):
 async def llms():
     # return json response that validate if each llm api-key is valid (not none)
     return {
-        "LANGCHAIN_API_KEY": os.getenv("LANGCHAIN_API_KEY") is not None,
-        "HF_TOKEN": os.getenv("HF_TOKEN") is not None,
-        "COHERE_API_KEY": os.getenv("COHERE_API_KEY") is not None,
-        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
-        "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") is not None,
-        "XAI_API_KEY": os.getenv("XAI_API_KEY") is not None,
-        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY") is not None,
+        "LANGCHAIN_API_KEY": is_env_var_set("LANGCHAIN_API_KEY"),
+        "HF_TOKEN": is_env_var_set("HF_TOKEN"),
+        "COHERE_API_KEY": is_env_var_set("COHERE_API_KEY"),
+        "GOOGLE_API_KEY": is_env_var_set("GOOGLE_API_KEY"),
+        "MISTRAL_API_KEY": is_env_var_set("MISTRAL_API_KEY"),
+        "XAI_API_KEY": is_env_var_set("XAI_API_KEY"),
+        "OPENAI_API_KEY": is_env_var_set("OPENAI_API_KEY"),
     }
 
 
