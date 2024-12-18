@@ -1,4 +1,3 @@
-import os
 import re
 import time
 import uvicorn
@@ -179,13 +178,13 @@ if is_env_var_set("MISTRAL_API_KEY"):
 async def llms():
     # return json response that validate if each llm api-key is valid (not none)
     return {
-        "LANGCHAIN_API_KEY": os.getenv("LANGCHAIN_API_KEY") is not None,
-        "HF_TOKEN": os.getenv("HF_TOKEN") is not None,
-        "COHERE_API_KEY": os.getenv("COHERE_API_KEY") is not None,
-        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
-        "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") is not None,
-        "XAI_API_KEY": os.getenv("XAI_API_KEY") is not None,
-        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY") is not None,
+        "LANGCHAIN_API_KEY": is_env_var_set("LANGCHAIN_API_KEY"),
+        "HF_TOKEN": is_env_var_set("HF_TOKEN"),
+        "COHERE_API_KEY": is_env_var_set("COHERE_API_KEY"),
+        "GOOGLE_API_KEY": is_env_var_set("GOOGLE_API_KEY"),
+        "MISTRAL_API_KEY": is_env_var_set("MISTRAL_API_KEY"),
+        "XAI_API_KEY": is_env_var_set("XAI_API_KEY"),
+        "OPENAI_API_KEY": is_env_var_set("OPENAI_API_KEY"),
     }
 
 
