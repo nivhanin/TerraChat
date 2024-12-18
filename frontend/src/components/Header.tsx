@@ -1,10 +1,11 @@
 import { Box, Typography, Button } from '@mui/material';
 import StatusBanner from './StatusBanner';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useModelAvatar } from '../contexts/ModelAvatarContext';
 import { CustomToggle } from './CustomToggle';
 import { ModelStatusIcons } from './ModelStatusIcons';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import TerraSvg from '../../images/TerraSvg';
 
 export const Header = () => {
   const location = useLocation();
@@ -32,9 +33,17 @@ export const Header = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant='h6' sx={{ fontWeight: 600 }}>
-            TerraChat
-          </Typography>
+          <RouterLink
+            to='/'
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          >
+            <TerraSvg additionalStyles={{ width: '32px', height: '32px', marginRight: '12px' }} />
+            <Box>
+              <Typography variant='h6' sx={{ fontWeight: 600, color: 'text.primary' }}>
+                TerraChat
+              </Typography>
+            </Box>
+          </RouterLink>
           <StatusBanner />
         </Box>
         <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>

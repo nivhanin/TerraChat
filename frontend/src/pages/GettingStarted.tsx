@@ -6,13 +6,21 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
+  Link,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import KeyIcon from '@mui/icons-material/Key';
 import { useLLMValidation } from '../contexts/LLMValidationContext';
 import TerraSvg from '../../images/TerraSvg';
 import { useTheme } from '../contexts/ThemeContext';
+import { Link as RouterLink } from 'react-router-dom';
 
 export const GettingStarted = () => {
+  const {
+    palette: {
+      primary: { main },
+    },
+  } = useMuiTheme();
   const { isDarkMode } = useTheme();
   const { llmValidation, isLoading } = useLLMValidation();
 
@@ -135,6 +143,21 @@ export const GettingStarted = () => {
             ? "All required API keys are configured. You'll be redirected to the chat interface."
             : 'All the API keys listed above are required to access the chat interface'}
         </Typography>
+        <Link
+          component={RouterLink}
+          to='/documentation'
+          sx={{
+            color: isDarkMode ? main : '#B39709',
+            textAlign: 'center',
+            fontSize: '14px',
+            textDecoration: 'none',
+            '&:hover': {
+              textDecoration: 'underline',
+            },
+          }}
+        >
+          View Documentation →
+        </Link>
       </Box>
     </Box>
   );

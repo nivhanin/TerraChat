@@ -68,7 +68,9 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
       {messages.map((message) => (
         <StyledPaper messageRole={message.role} key={message.id} elevation={0}>
           {message.role === 'assistant' && (
-            <ModelAvatar source={message.source} /> // Use the source prop
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+              <ModelAvatar source={message.source} />
+            </Box>
           )}
           <Box
             sx={{
@@ -81,10 +83,24 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
               {message.content}
             </Typography>
             {message.role === 'assistant' && (
-              <Box className='message-controls'>
-                <MessageControls
-                // onCopy={() => navigator.clipboard.writeText(message.content)}
-                />
+              <Box
+                className='message-controls'
+                sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+              >
+                <MessageControls />
+                {message.responseTime && (
+                  <Typography
+                    variant='caption'
+                    sx={{
+                      alignSelf: 'center',
+                      color: 'text.secondary',
+                      fontSize: '12px',
+                      mt: 2,
+                    }}
+                  >
+                    {(message.responseTime / 1000).toFixed(2)}s
+                  </Typography>
+                )}
               </Box>
             )}
           </Box>

@@ -8,16 +8,16 @@ const MODEL_IMAGES = {
     dark: 'mistralai.png',
   },
   'models/gemini-1.5-pro': {
-    light: 'gemini_pro.png',
-    dark: 'gemini_pro.png',
+    light: 'gemini.png',
+    dark: 'gemini.png',
   },
   'models/gemini-1.5-flash': {
     light: 'gemini.png',
     dark: 'gemini.png',
   },
   'models/gemini-1.5-flash-8b': {
-    light: 'gemini_8b.png',
-    dark: 'gemini_8b.png',
+    light: 'gemini.png',
+    dark: 'gemini.png',
   },
   'command-r-plus-08-2024': {
     light: 'cohere_plus.png',
@@ -31,6 +31,18 @@ const MODEL_IMAGES = {
     light: 'xai_black.png',
     dark: 'xai_light.png',
   },
+  'o1-mini': {
+    light: 'openai_black.png',
+    dark: 'openai_light.png',
+  },
+  'gpt-3.5-turbo': {
+    light: 'openai_black.png',
+    dark: 'openai_light.png',
+  },
+  'gpt-4o-mini': {
+    light: 'openai_black.png',
+    dark: 'openai_light.png',
+  },
 } as const;
 
 const MODEL_DISPLAY_NAMES = {
@@ -41,6 +53,9 @@ const MODEL_DISPLAY_NAMES = {
   'command-r-plus-08-2024': 'Cohere+',
   'command-r-08-2024': 'Cohere',
   'grok-2-1212': 'Grok AI',
+  'o1-mini': 'OpenAI',
+  'gpt-3.5-turbo': 'OpenAI',
+  'gpt-4o-mini': 'OpenAI',
 } as const;
 
 const defaultModelImage = {

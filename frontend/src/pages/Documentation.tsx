@@ -28,6 +28,7 @@ const MODEL_LINKS = {
   GOOGLE_API_KEY: 'https://aistudio.google.com/apikey',
   COHERE_API_KEY: 'https://dashboard.cohere.com/api-keys',
   XAI_API_KEY: 'https://console.x.ai',
+  OPENAI_API_KEY: 'https://platform.openai.com/settings',
 };
 
 export const Documentation = () => {
@@ -152,7 +153,7 @@ export const Documentation = () => {
 
       <ModelTable models={OPTIONAL_MODELS} title='Optional API Keys' required={false} />
 
-      <Box sx={{ mt: 4 }}>
+      <Box>
         <Typography variant='h5' sx={{ textAlign: 'left', fontWeight: 600, mb: 3 }}>
           Configuration Steps
         </Typography>
@@ -186,6 +187,7 @@ export const Documentation = () => {
             color: 'text.secondary',
             textAlign: 'center',
             fontSize: '14px',
+            mt: 4,
           }}
         >
           For additional support or questions, please refer to our GitHub repository or contact

@@ -62,6 +62,7 @@ export const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleScroll = () => {
     if (chatContainerRef.current) {
@@ -93,6 +94,12 @@ export const Chat = () => {
     }
   }, [messages.length]);
 
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -105,6 +112,7 @@ export const Chat = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    const requestStartTime = Date.now();
 
     try {
       const data = await sendChatMessage(input);
@@ -113,6 +121,7 @@ export const Chat = () => {
         content: data.response,
         role: 'assistant',
         source: data.source,
+        responseTime: Date.now() - requestStartTime,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -232,7 +241,7 @@ export const Chat = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={isLoading}
+            inputRef={inputRef}
             InputProps={{
               endAdornment: (
                 <InputAdornment position='start'>
