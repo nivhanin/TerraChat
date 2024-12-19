@@ -2,7 +2,7 @@ import { Box, Tooltip, Avatar, Divider, Menu, IconButton, Typography } from '@mu
 import { useLLMValidation } from '../contexts/LLMValidationContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import ExtensionIcon from '@mui/icons-material/Extension';
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
@@ -171,7 +171,7 @@ export const ModelStatusIcons = () => {
             '&:hover': { color: 'text.primary' },
           }}
         >
-          <ExtensionIcon sx={{ fontSize: 20 }} />
+          <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />
         </Box>
       </Tooltip>
 
