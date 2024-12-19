@@ -1,34 +1,10 @@
-import { Box, Typography, IconButton, Paper } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import { Message, MessageRoles } from '../types';
 import { styled } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModelAvatar from './ModelAvatar';
 import LoadingDots from './LoadingDots';
-
-const MessageControls = () => (
-  <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-    <IconButton size='small' sx={{ color: 'text.secondary' }}>
-      <VolumeUpIcon fontSize='small' />
-    </IconButton>
-    <IconButton size='small' sx={{ color: 'text.secondary' }}>
-      <ContentCopyIcon fontSize='small' />
-    </IconButton>
-    <IconButton size='small' sx={{ color: 'text.secondary' }}>
-      <ThumbUpIcon fontSize='small' />
-    </IconButton>
-    <IconButton size='small' sx={{ color: 'text.secondary' }}>
-      <ThumbDownIcon fontSize='small' />
-    </IconButton>
-    <IconButton size='small' sx={{ color: 'text.secondary' }}>
-      <AutorenewIcon fontSize='small' />
-    </IconButton>
-  </Box>
-);
+import { MessageControls } from './MessageControls';
 
 const StyledPaper = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'messageRole',
@@ -76,6 +52,7 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
             sx={{
               flex: 1,
               display: 'flex',
+              gap: 2,
               flexDirection: message.role === 'user' ? 'row-reverse' : 'column',
             }}
           >
@@ -83,7 +60,7 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
             {message.role === 'assistant' && (
               <Box
                 className='message-controls'
-                sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
               >
                 <MessageControls />
                 {message.responseTime && (
@@ -93,7 +70,6 @@ const MessageList = ({ messages, isLoading }: { messages: Message[]; isLoading: 
                       alignSelf: 'center',
                       color: 'text.secondary',
                       fontSize: '12px',
-                      mt: 2,
                     }}
                   >
                     {(message.responseTime / 1000).toFixed(2)}s

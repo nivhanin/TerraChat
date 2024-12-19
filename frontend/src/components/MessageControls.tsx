@@ -15,12 +15,8 @@ export const MessageControls = ({ onCopy, onRegenerate }: MessageControlsProps) 
     <Box
       sx={{
         display: 'flex',
-        gap: 0.5,
-        opacity: 0,
-        transition: 'opacity 0.2s',
-        '.MuiPaper-root:hover &': {
-          opacity: 1,
-        },
+        alignItems: 'center',
+        gap: 1,
       }}
     >
       <Tooltip title='Read aloud'>

@@ -1,6 +1,6 @@
 # TerraChat Frontend
 
-A modern chat interface built with React, TypeScript, and Chakra UI.
+A modern chat interface built with React, TypeScript, and Material UI.
 
 ## Features
 
@@ -12,8 +12,8 @@ A modern chat interface built with React, TypeScript, and Chakra UI.
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
-- pnpm (v7 or higher)
+- Node.js (v18 or higher)
+- pnpm (v8 or higher)
 
 ## Setup
 
@@ -37,19 +37,20 @@ The application will be available at `http://localhost:5173`.
 - `pnpm build` - Build for production
 - `pnpm preview` - Preview production build
 - `pnpm lint` - Run ESLint
-- `pnpm format` - Run Prettier
 
 ## Project Structure
 
 - `/src/components` - React components
+- `/src/pages` - Page components
+- `/src/contexts` - React context providers
+- `/src/services` - API and service functions
 - `/src/types` - TypeScript type definitions
-- `/src/assets` - Static assets
 
 ## Technologies Used
 
-- React
+- React 19
 - TypeScript
-- Material Design
-- Vite
+- Material UI (MUI)
+- Rsbuild
 - ESLint
 - Prettier
