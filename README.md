@@ -33,8 +33,15 @@ Follow these steps to set up and run TerraChat on your local machine:
    ```
 
 2. **Start the Python Server**:
+
    ```bash
    poetry run python server.py
+   ```
+
+3. **Start the Frontend Server**:
+   ```bash
+   cd frontend
+   pnpm dev
    ```
 
 Once started, the application will be accessible at `http://localhost:5173`.
