@@ -9,6 +9,6 @@ while ! nc -z localhost 8000; do
   sleep 1
 done
 
-# Start the frontend server
+# Start the frontend
 cd frontend
 pnpm dev
