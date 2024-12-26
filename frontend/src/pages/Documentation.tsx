@@ -15,6 +15,7 @@ import {
   Avatar,
   Paper,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import TerraSvg from '../../images/TerraSvg';
 import { useTheme } from '../contexts/ThemeContext';
@@ -30,6 +31,24 @@ const MODEL_LINKS = {
   XAI_API_KEY: 'https://console.x.ai',
   OPENAI_API_KEY: 'https://platform.openai.com/settings',
 };
+
+const MistralApprovalNote = () => (
+  <Alert
+    severity='info'
+    sx={{
+      mt: 1,
+      p: 2,
+      border: '1px solid',
+      borderColor: 'info.main',
+      borderRadius: 1,
+    }}
+  >
+    <Typography variant='body2' color='text.secondary'>
+      Note: Mistral approval may take up to 24 hours, potentially causing a 401 Unauthorized error
+      until completed.
+    </Typography>
+  </Alert>
+);
 
 export const Documentation = () => {
   const { isDarkMode } = useTheme();
@@ -116,6 +135,7 @@ export const Documentation = () => {
                   >
                     Get {name} API Key →
                   </Link>
+                  {key === 'MISTRAL_API_KEY' && <MistralApprovalNote />}
                 </TableCell>
               </TableRow>
             ))}
