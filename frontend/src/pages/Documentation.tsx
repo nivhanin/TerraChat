@@ -15,6 +15,7 @@ import {
   Avatar,
   Paper,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import TerraSvg from '../../images/TerraSvg';
 import { useTheme } from '../contexts/ThemeContext';
@@ -30,6 +31,24 @@ const MODEL_LINKS = {
   XAI_API_KEY: 'https://console.x.ai',
   OPENAI_API_KEY: 'https://platform.openai.com/settings',
 };
+
+const MistralApprovalNote = () => (
+  <Alert
+    severity='info'
+    sx={{
+      mt: 1,
+      p: 2,
+      border: '1px solid',
+      borderColor: 'info.main',
+      borderRadius: 1,
+    }}
+  >
+    <Typography variant='body2' color='text.secondary'>
+      Note: Mistral approval may take up to 24 hours, potentially causing a 401 Unauthorized error
+      until completed.
+    </Typography>
+  </Alert>
+);
 
 export const Documentation = () => {
   const { isDarkMode } = useTheme();
@@ -116,6 +135,7 @@ export const Documentation = () => {
                   >
                     Get {name} API Key →
                   </Link>
+                  {key === 'MISTRAL_API_KEY' && <MistralApprovalNote />}
                 </TableCell>
               </TableRow>
             ))}
@@ -175,7 +195,36 @@ export const Documentation = () => {
           </ListItem>
           <ListItem>
             <ListItemText
-              primary='3. Restart Application'
+              primary='3. Grant Access to Mixtral-8x7B Model'
+              secondary={
+                <>
+                  To use the Mixtral-8x7B model, you need to grant access on Hugging Face. Follow
+                  this link to request access:
+                  <Link
+                    href='https://huggingface.co/mistralai/Mixtral-8x7B-v0.1'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    sx={{
+                      textDecoration: 'none',
+                      color: !isDarkMode ? 'text.primary' : 'primary.main',
+                      '&:hover': { textDecoration: 'underline' },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                    }}
+                  >
+                    Mixtral-8x7B Model on Hugging Face →
+                  </Link>
+                  We use the Mixtral-8x7B model for generating embeddings, which are essential for
+                  the functionality of TerraChat.
+                </>
+              }
+              primaryTypographyProps={{ sx: { fontWeight: 600 } }}
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemText
+              primary='4. Restart Application'
               secondary='Restart the application to apply the new environment variables.'
               primaryTypographyProps={{ sx: { fontWeight: 600 } }}
             />
