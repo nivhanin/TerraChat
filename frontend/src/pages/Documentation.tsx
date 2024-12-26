@@ -175,7 +175,36 @@ export const Documentation = () => {
           </ListItem>
           <ListItem>
             <ListItemText
-              primary='3. Restart Application'
+              primary='3. Grant Access to Mixtral-8x7B Model'
+              secondary={
+                <>
+                  To use the Mixtral-8x7B model, you need to grant access on Hugging Face. Follow
+                  this link to request access:
+                  <Link
+                    href='https://huggingface.co/mistralai/Mixtral-8x7B-v0.1'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    sx={{
+                      textDecoration: 'none',
+                      color: !isDarkMode ? 'text.primary' : 'primary.main',
+                      '&:hover': { textDecoration: 'underline' },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                    }}
+                  >
+                    Mixtral-8x7B Model on Hugging Face →
+                  </Link>
+                  We use the Mixtral-8x7B model for generating embeddings, which are essential for
+                  the functionality of TerraChat.
+                </>
+              }
+              primaryTypographyProps={{ sx: { fontWeight: 600 } }}
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemText
+              primary='4. Restart Application'
               secondary='Restart the application to apply the new environment variables.'
               primaryTypographyProps={{ sx: { fontWeight: 600 } }}
             />
