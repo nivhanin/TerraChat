@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Target goal is to use free token(from multiple vendors) to achieve maximum cost-effective chat"
 authors = ["Niv Hanin"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
