@@ -56,14 +56,6 @@ You can also run the project using the `start_terrachat` script:
 
 This script will handle all necessary steps to start the application.
 
-## Grant Access to Mixtral-8x7B Model
-
-To use the Mixtral-8x7B model, you need to grant access on Hugging Face. Follow this link to request access:
-
-[Mixtral-8x7B Model on Hugging Face](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1)
-
-We use the Mixtral-8x7B model for generating embeddings, which are essential for the functionality of TerraChat. Once access is granted, you can integrate this model into TerraChat.
-
 ## Get Involved
 
 Join our community of developers and contribute to the evolution of TerraChat. Whether you're interested in enhancing the API, improving the UI, or expanding model integrations, your input and collaboration are invaluable.
